@@ -1,7 +1,4 @@
-import sqlite3
-
-# note replace this with logic from a config file depending on if prod or dev
-DB = "db/test.db"
+from db import get_database_connection
 
 
 def run_sql_file(cursor, filename):
@@ -13,9 +10,10 @@ def run_sql_file(cursor, filename):
 
 def setup_database():
     """Sets up and seeds database"""
-    conn = sqlite3.connect(DB)
+    conn = get_database_connection()
     cursor = conn.cursor()
 
+    # creates schema
     run_sql_file(cursor, "db/schema.sql")
     # now run seed data
 
