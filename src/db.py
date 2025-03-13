@@ -1,15 +1,10 @@
-from config import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
-import pyodbc
+from config import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+import psycopg2
 
 
 def get_database_connection():
     """Returns connection object to database"""
-    connection = pyodbc.connect(
-        driver = "{ODBC Driver 11 for SQL Server}",
-        host = DB_NAME,
-        database = DB_NAME,
-        user = f"{USERDOMAIN}\\{USERNAME}",
-        Trusted_Connection="yes"
-        )
+    DB_STRING = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    connection = psycopg2.connect(DB_STRING)
 
     return connection
