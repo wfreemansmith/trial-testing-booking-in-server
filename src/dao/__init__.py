@@ -1,12 +1,11 @@
-from db import get_database_connection
 from typing import List
 from logger import logger
 
 ## NB probably replace this all with SQLalchemy eventually
 
 class DAO():
-    def __init__(self):
-        self.conn = get_database_connection()
+    def __init__(self, conn):
+        self.conn = conn
         self.conn.autocommit = True
         self.cursor = self.conn.cursor()
 
@@ -15,11 +14,16 @@ class DAO():
         with open(filename, "r") as file:
             queries = file.read().split(';')
 
+        result = None
+
         for sql in queries:
             if sql.strip():
                 command_str = sql.split("(")[0].strip()
-                self.cursor.execute(sql)
                 logger.info(f"Running query from file '{command_str}'")
+                result = self.cursor.execute(sql)
+        
+        return result
+                
 
     def select(self, tablename: str, select_columns: List[str] = None, where: List[tuple] = []):
         """Selects columns from given table. If no columns given return all.

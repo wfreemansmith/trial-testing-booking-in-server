@@ -1,5 +1,5 @@
 from logger import logger
-from db import get_legacy_database_connection
+from db import get_legacy_database_connection, get_database_connection
 from dao import DAO
 import csv
 import os
@@ -15,11 +15,47 @@ def read_csv(csv_file_path):
         data = [tuple(row) for row in reader]
 
         return headers, data
+    
+
+def clean_centre_data(data):
+    """Cleans centre data"""
+
+    centre_data = []
+
+    for i, row in enumerate(data):
+        for j, item in enumerate(row):
+            if item == '.':
+                data[i][j] = None
+        centre_data.append(row[:10])
+
+    return centre_data
+
+def clean_contact_data(data):
+    """Prepares contact data"""
+
+    contact_data = []
+
+    filtered_data = [(row[0], *row[10:]) for row in data]
+    for row in filtered_data:
+        centre_id = row[0]
+
+        # add primary and secondary contacts
+        if row[1] and row[2]:
+            name = row[1].strip().strip('\xa0')
+            email = row[2].strip().strip('\xa0')
+            contact_data.append(tuple([centre_id, name, email, True]))
+        if row[3] and row[4]:
+            name = row[3].strip().strip('\xa0')
+            email = row[4].strip().strip('\xa0')
+            contact_data.append(tuple([centre_id, name, email, False]))
+    
+    return contact_data
 
 
 def setup_database():
     """Sets up and seeds database"""
-    dao = DAO()
+    conn = get_database_connection()
+    dao = DAO(conn)
 
     # creates schema
     dao.run_sql_file("db/schema.sql")
@@ -34,12 +70,19 @@ def setup_database():
 
             dao.insert_many(tablename, headers, data)
     
-    # gets data from legacy database
+    # gets centre data from legacy database
     legacy_conn = get_legacy_database_connection()
-    legacy_cursor = legacy_conn.cursor()
+    legacy_dao = DAO(legacy_conn)
+    result = legacy_dao.run_sql_file("db/legacy_db_queries/select_centres.sql")
+    data = result.fetchall()
 
-    run_sql_file(legacy_cursor, "db/legacy_db_queries/select_centres.sql")
-    # centre_rows = legacy_cursor.fetchall()
+    centre_data = clean_centre_data(data)
+    center_headers = ['centre_id', 'live_centre_number', 'centre_name', 'address_1', 'address_2', 'address_3', 'address_4', 'address_5', 'country_id', 'phone_number']
+    dao.insert_many('centres', center_headers, centre_data)
+    
+    contact_data = clean_contact_data(data)
+    contact_headers = ['centre_id', 'contact_name', 'contact_email', 'primary_contact']
+    dao.insert_many('centre_contacts', contact_headers, contact_data)
 
     # USE DAO TO INSERT HERE
 
