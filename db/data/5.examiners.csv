@@ -1,24 +1,22 @@
-﻿first_name,last_name,contact_email,as_id,country,currency,examiner_role_id,contact_signed,active
+﻿first_name,last_name,contact_email,as_id,country,currency,examiner_role_id,contract_signed,active
 Adam,Rudrum,adamrudrum@hotmail.com,825329,UK,GBP,2,Aug-24,TRUE
 Adnan,Wali,adnanwali@hotmail.com,822919,UK,GBP,2,Aug-24,TRUE
 Agnes,Nagy-Walton,agnes.nagy-walton@idp.com,826549,CAN,CAD,2,Aug-24,TRUE
 Aled,Powell,ielts@aledpowell.cymru,826435,UK,GBP,2,May 2024-July 2024,FALSE
-Alemu,Mekonnen,alemu73@yahoo.co.uk,825526,UK,GBP,,May 2024-July 2024,FALSE
 Ali,Ebrahmi,ali.ebrahimi@idp.com,826226,CAN,CAD,2,Aug-24,TRUE
 Alison,Clearbury,aliwe13@hotmail.com,823580,UK,GBP,2,Aug-24,TRUE
 Andrew,Augustine,Andrew.Augustine@idp.com,826263,CAN,CAD,2,Aug-24,TRUE
 Andrew,Blackmore,andybla62@yahoo.co.uk,815552,UK,GBP,2,Aug-24,TRUE
-Anelise,Chicherio,unknownemail@email.com,11111,Non-UK,,3,May 2024-July 2024,FALSE
 Angelina,Pashalieva-Vlaeva,Angelina.Pashalieva-Vlaeva@idp.com,826441,CAN,CAD,2,Aug-24,TRUE
 Barrie,Brown,barrie.brown@idp.com,807203,AUS,AUD,1,Aug-24,TRUE
 Caroline,Bacon,caroline.bacon.ielts@gmail.com,820277,UK,GBP,2,Aug-24,TRUE
-Carolyn,Primrose,ca_primrose@yahoo.co.uk,825492,UK,GBP,,May 2024-July 2024,FALSE
+Carolyn,Primrose,ca_primrose@yahoo.co.uk,825492,UK,GBP,1,May 2024-July 2024,FALSE
 Christine,Sweetman,christine.sweetman.ielts@gmail.com,348120,UK,GBP,2,Aug-24,TRUE
 Daniel,McGillis,daniel.mcgillis@idp.com,826430,CAN,CAD,2,Aug-24,TRUE
 Danielle,Capretti,DanielleCapretti.ielts@yahoo.com,823581,UK,GBP,2,Aug-24,TRUE
 David,Lee,david.lee@idp.com,809309,AUS,AUD,1,Aug-24,TRUE
 Deborah,Wood,debbiewoodteaching@gmail.com,825508,UK,GBP,2,Aug-24,TRUE
-Debra,Thompson,dshadmand@btinternet.com; Debbie.Thompson@ul.ie,311103,UK,GBP,,Aug-24,TRUE
+Debra,Thompson,dshadmand@btinternet.com; Debbie.Thompson@ul.ie,311103,UK,GBP,1,Aug-24,TRUE
 Dorothy,Glenn,dorothymglenn@googlemail.com,808485,UK,GBP,3,Aug-24,FALSE
 Douglas,Haig,douglashaig.ielts@aol.com,826427,UK,GBP,2,Aug-24,TRUE
 Elizabeth,Spannbauer,Elizabeth.Spannbauer@idp.com,826554,CAN,CAD,2,Aug-24,TRUE
@@ -28,13 +26,12 @@ Fiona,Young,fionskis@gmail.com,825493,UK,GBP,1,Aug-24,TRUE
 Fulvia,Bublies,fulvia.bublies@idp.com,826431,CAN,CAD,2,Aug-24,TRUE
 Gavin,Reid,reid_gavin@hotmail.co.uk,19760,UK,GBP,2,Aug-24,TRUE
 George,Kelly,george.kelly@idp.com,820166,CAN,CAD,1,Aug-24,TRUE
-George,Needham,george.needham@britishcouncil.org,808568,UK,GBP,,May 2024-July 2024,FALSE
+George,Needham,george.needham@britishcouncil.org,808568,UK,GBP,1,May 2024-July 2024,FALSE
 Graham,Byron,jgbyron@hotmail.co.uk,820184,PORTUGAL ,GBP,1,Aug-24,TRUE
 Halima,Bibi,halimabibi1986@hotmail.co.uk,826436,UK,GBP,2,Aug-24,TRUE
 Heather,MacLaren,heather.maclaren@idp.com,820167,CAN,CAD,1,Aug-24,TRUE
 Heather,Rees,heather.rees@idp.com,826298,CAN,CAD,2,Aug-24,TRUE
 Helen,Johnston,hjohnst1@optusnet.com.au,283584,AUS,AUD,1,Aug-24,TRUE
-Isabella,Tacticos,,817885,UK,GBP,,May 2024-July 2024,FALSE
 Jacques,Kolokossian,jacqueskol@gmail.com,811315,AUS,AUD,1,Aug-24,TRUE
 Jennifer,McCready,jennifer.mccready.ielts@gmail.com,825525,UK,GBP,2,Aug-24,TRUE
 Jenny,Mills,jenniferkarenmills@gmail.com,817886,UK,GBP,1,Aug-24,TRUE
@@ -43,12 +40,11 @@ John,Cahill,jmecahill@gmail.com,826428,UK,GBP,2,Aug-24,TRUE
 John,Meizoso,jmeizoso@hotmail.com,825404,UK,GBP,2,Aug-24,TRUE
 Jonathan,Allsopp,jmrallsopp@yahoo.co.uk ,809218,UK,GBP,1,Aug-24,TRUE
 Joy,(Jayati) Singh,jayati.singh@idp.com,826421,CAN,CAD,2,Aug-24,TRUE
-Julie,Griffin,jagtesol2001@hotmail.co.uk,826488,UK,GBP,,May 2024-July 2024,FALSE
+Julie,Griffin,jagtesol2001@hotmail.co.uk,826488,UK,GBP,1,May 2024-July 2024,FALSE
 Juliet,Daunt,juliet.daunt@idp.com,826301,CAN,CAD,2,Aug-24,TRUE
 Kate,Chandler,kate.chandler@gmail.com,11628,AUS,AUD,1,Aug-24,TRUE
 Kate,Quigley,katherinejanequigley@gmail.com,2822,NZ,NZD,3,Aug-24,TRUE
 Katy,Shaw,katyshawlondon@gmail.com,257117,UK,GBP,1,Aug-24,TRUE
-Laurel,Scott,,,FALSEn-UK,,1,May 2024-July 2024,FALSE
 Louisa,Aleixo,louisa.aleixo.ielts@outlook.com,826423,PORTUGAL,GBP,2,Aug-24,TRUE
 Louise,Malster-Hinett,louhinett@hotmail.com,825405,UK,GBP,2,Aug-24,FALSE
 Luka,Ellis,luka.ellis@idp.com,826553,CAN,CAD,2,Aug-24,TRUE
@@ -58,21 +54,17 @@ Maria,Collinet,maria.collinet@idp.com,826438,CAN,CAD,2,Aug-24,TRUE
 Mark,Morgan,corpuseap@gmail.com,826429,UK,GBP,2,Aug-24,TRUE
 Maxim,Walsh,maxwalsh1@btinternet.com,823583,UK,GBP,2,Aug-24,TRUE
 Mel,Gardner,mel.gardner@britishcouncil.org,823584,UK,GBP,2,Aug-24,TRUE
-Michael,Austen,,,,,,,FALSE
 Michael,Burton,Michael.Burton1@britishcouncil.org,823585,UK,GBP,2,Aug-24,TRUE
 Michael,Coulson,micheal.coulson.ielts@hotmail.com,826485,UK,GBP,2,Aug-24,TRUE
 Michael,Stowe,michael.stowe@idp.com,826561,CAN,CAD,2,Aug-24,TRUE
 Michele,Majewski,micheleski_1@yahoo.com,825297,Portugal,GBP,2,Aug-24,TRUE
 Michelle,Amaya- Torres,mamayatorres@gmail.com,826432,CAN,CAD,2,Aug-24,TRUE
 Nareene,Kaloyan,nareene.kaloyan.ielts@gmail.com,825500,UK,GBP,2,Aug-24,TRUE
-Nasrin,Akhter,,823586,UK,GBP,,May 2024-July 2024,FALSE
 Natallia,FALSEvikava,nat.FALSEvikava@gmail.com,823587,UK,GBP,2,Aug-24,TRUE
 Nathan,Christian,nathanchristian@icloud.com,816280,UK,GBP,3,Aug-24,TRUE
 Nick,Doran,doran.nick@gmail.com,811208,UK,GBP,2,Aug-24,TRUE
-Patricia,Dooey,,,FALSEn-UK,,1,May 2024-July 2024,FALSE
 Paul,Alderson,palderson25w@gmail.com,27272,UK,GBP,2,Aug-24,TRUE
 3te,Brown,3ter.brown.ielts@hotmail.com,823588,UK,GBP,2,Aug-24,TRUE
-Rachel,Allen,,,FALSEn-UK,,1,May 2024-July 2024,FALSE
 Raghav,Murali,Raghav.Murali@idp.com,826299,CAN,CAD,2,Aug-24,TRUE
 Robert,Boden,Robert.Boden@britishcouncil.org.cn,825407,China,GBP,2,Aug-24,TRUE
 Robert,Edwards,redwards.osm@gmail.com,827512,UK,GBP,1,Aug-24,TRUE
@@ -84,15 +76,9 @@ Samira,Racine,samirashehadeh@hotmail.com,826484,UK,GBP,2,Aug-24,TRUE
 Sara,Zadehdabbagh,Sara.Zadehdabbagh@idp.com; szdabbagh@gmail.com,826304,CAN,CAD,2,Aug-24,TRUE
 Sarah,Brooker,sasbrooker@gmail.com,543616,UK,GBP,3,Aug-24,TRUE
 Sarah,White,Sarah.White@britishcouncil.org,825395,UAE,GBP,2,Aug-24,TRUE
-Shelley,DuCoeur,shelleyducoeur@gmail.com,,,,,May 2024-July 2024,FALSE
-Shirley,Tatton,shirley.tatton.ielts@fastmail.net,823589,UK,GBP,,May 2024-July 2024,FALSE
 Simon,Haigh,simon.haigh.ielts@gmail.com,825507,UK,GBP,2,May 2024-July 2024,FALSE
-Sonya,Skuse,,817884,UK,GBP,,May 2024-July 2024,FALSE
 Susan,Boswell-Rees,sdbrees11@gmail.com,827469,UK,GBP,1,Aug-24,TRUE
 Susan,Holt,sueholt67@gmail.com,820183,UK,GBP,1,Aug-24,TRUE
 Timothy,Musgrave,tim.musgrave.ielts@outlook.com,823590,UK,GBP,2,Aug-24,TRUE
 Trish,Dooey,,631248,AUS,AUD,1,Aug-24,FALSE
 Ursula,Delfuente,delafuentesula@gmail.com,24686,UK,GBP,2,Aug-24,TRUE
-Vlad,3jovic,,10886,IND,,1,May 2024-July 2024,FALSE
-Wayne,(Wen Yu) Mai,wenyu.mai@britishcouncil.org.cn,820173,CHINA,GBP,,May 2024-July 2024,FALSE
-William,3arson,will.3arson.ielts@mail.com,,UK,GBP,,May 2024-July 2024,FALSE

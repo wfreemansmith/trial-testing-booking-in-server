@@ -2,6 +2,7 @@
 DROP TABLE IF EXISTS file_uploads;
 DROP TABLE IF EXISTS candidates;
 DROP TABLE IF EXISTS uploads;
+DROP TABLE IF EXISTS common_wrong_answers;
 DROP TABLE IF EXISTS answer_keys;
 DROP TABLE IF EXISTS versions;
 DROP TABLE IF EXISTS examiner_availability;
@@ -12,8 +13,28 @@ DROP TABLE IF EXISTS languages;
 DROP TABLE IF EXISTS countries;
 DROP TABLE IF EXISTS language_families;
 DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS examiner_payment_rates
+DROP TABLE IF EXISTS candidate_feedback;
 
 -- Create tables
+CREATE TABLE IF NOT EXISTS candidate_feedback (
+    bandscore TEXT PRIMARY KEY,
+    listening_feedback TEXT,
+    reading_feedback TEXT,
+    writing_feedback TEXT
+);
+
+CREATE TABLE IF NOT EXISTS examiner_payment_rates ( -- NEED TO FIX THIS
+    rate_id INT PRIMARY KEY,
+    location TEXT,
+    currency CHAR(3),
+    component CHAR(2),
+    item TEXT,
+    rate NUMERIC(10,2),
+    unit TEXT,
+    holiday_rate DOUBLE PRECISION
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
     session_id INT NOT NULL,
     session_name VARCHAR(50) NOT NULL,
@@ -79,7 +100,7 @@ CREATE TABLE IF NOT EXISTS examiners (
     currency TEXT,
     examiner_role_id INT NOT NULL,
     contract_signed TEXT,
-    active BOOLEAN
+    active BOOLEAN,
     FOREIGN KEY (examiner_role_id) REFERENCES examiner_roles(examiner_role_id)
 );
 
@@ -114,11 +135,21 @@ CREATE TABLE IF NOT EXISTS answer_keys (
     version_id TEXT NOT NULL,
     question_number INT NOT NULL,
     answer TEXT NOT NULL,
-    anchor BOOLEAN NOT NULL,
+    productive_answer BOOLEAN,
+    anchor_question BOOLEAN NOT NULL,
     ccf_code CHAR(1) NOT NULL,
     PRIMARY KEY (answer_id),
     FOREIGN KEY (version_id) REFERENCES versions(version_id)
 );
+
+CREATE TABLE IF NOT EXISTS common_wrong_answers (
+    cwa_id SERIAL PRIMARY KEY,
+    version_id TEXT NOT NULL,
+    answer_id TEXT NOT NULL,
+    wrong_answer TEXT NOT NULL,
+    FOREIGN KEY (version_id) REFERENCES versions(version_id),
+    FOREIGN KEY (answer_id) REFERENCES answer_keys(answer_id)
+)
 
 CREATE TABLE IF NOT EXISTS uploads (
     upload_id TEXT GENERATED ALWAYS AS (session_id || '-' || centre_id || '-' || part_delivery) STORED,

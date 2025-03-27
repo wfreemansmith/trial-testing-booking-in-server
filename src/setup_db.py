@@ -1,17 +1,9 @@
-from db import get_database_connection
+from logger import logger
+from db import get_legacy_database_connection
+from dao import DAO
 import csv
 import os
 
-## NB probably replace this all with SQLalchemy eventually
-
-def run_sql_file(cursor, filename):
-    """Executes SQL command from a file."""
-    with open(filename, "r") as file:
-        queries = file.read().split(';')
-
-    for sql in queries:
-        if sql.strip():
-            cursor.execute(sql)
 
 def read_csv(csv_file_path):
     """Reads a CSV and returns a list of headers, and a list of tuples containing data"""
@@ -27,28 +19,32 @@ def read_csv(csv_file_path):
 
 def setup_database():
     """Sets up and seeds database"""
-    conn = get_database_connection()
-    cursor = conn.cursor()
+    dao = DAO()
 
     # creates schema
-    # run_sql_file(cursor, "db/schema.sql")
+    dao.run_sql_file("db/schema.sql")
 
     # adds data from csv files
     for root, _, files in os.walk(os.path.join("db", "data")):
         for file in files:
-            tablename = os.path.splitext(file)[0]
+            tablename = os.path.splitext(file)[0].split('.')[1]
             filepath = os.path.join(root, file)
             headers, data = read_csv(filepath)
-            print(f"importing {len(headers)} columns and {len(data)} rows for table '{tablename}'")
+            logger.info(f"importing {len(headers)} columns and {len(data)} rows for table '{tablename}'")
 
-            # USE DAO TO INSERT HERE
+            dao.insert_many(tablename, headers, data)
     
     # gets data from legacy database
+    legacy_conn = get_legacy_database_connection()
+    legacy_cursor = legacy_conn.cursor()
 
-    conn.commit()
+    run_sql_file(legacy_cursor, "db/legacy_db_queries/select_centres.sql")
+    # centre_rows = legacy_cursor.fetchall()
 
-    cursor.close()
-    conn.close()
+    # USE DAO TO INSERT HERE
+
+    # commit changes to db & close connection
+    dao.close()
 
 
 def seed_test_database():
