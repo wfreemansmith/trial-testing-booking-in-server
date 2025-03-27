@@ -1,0 +1,30 @@
+project_root/
+│── db/                        # Database-related files
+│   ├── schema.sql             # Table creation SQL
+│   ├── seed_data.sql          # Inserts test data
+│   ├── test.db                # SQLite database file (auto-created)
+│
+│── src/                       
+│   ├── models/                # ORM Models or Custom Data Classes
+│   │   ├── base.py            # SQLAlchemy Base (if using SQLAlchemy)
+│   │   ├── candidate.py       # Candidate model
+│   │   ├── centre.py          # Centre model
+│   │   ├── __init__.py        # Makes this a package
+│   │
+│   ├── dao/                   # Data Access Objects (Handles DB Queries)
+│   │   ├── candidate_dao.py   # DAO for candidates
+│   │   ├── centre_dao.py      # DAO for centres
+│   │   ├── __init__.py
+│   │
+│   ├── services/              # Controllers (handles data and calls DAO)
+│   │
+│   ├── routes/                # Handles API queries
+│   │
+│   ├── setup_db.py            # Creates & seeds database
+│   ├── db_utils.py            # Helper functions for queries
+│   ├── test_queries.py        # Runs tests on queries
+│
+│── tests/                      # Test cases
+│   ├── test_candidates.py
+│
+│── README.md                   # Documentation
