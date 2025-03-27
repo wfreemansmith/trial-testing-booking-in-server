@@ -1,5 +1,5 @@
 SELECT
-	CONCAT('"', PretestCentreNumber, '"') AS centre_id,
+	PretestCentreNumber AS centre_id,
 	LiveCentreNumber AS live_centre_number,
 	Name AS 'centre_name',
 	Address1 AS 'address_1',

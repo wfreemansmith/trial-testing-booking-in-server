@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS versions;
 DROP TABLE IF EXISTS examiner_availability;
 DROP TABLE IF EXISTS examiners;
 DROP TABLE IF EXISTS examiner_roles;
+DROP TABLE IF EXISTS centre_contacts;
 DROP TABLE IF EXISTS centres;
 DROP TABLE IF EXISTS languages;
 DROP TABLE IF EXISTS countries;
@@ -77,13 +78,18 @@ CREATE TABLE IF NOT EXISTS centres (
     address_5 TEXT,
     country_id INT NOT NULL,
     phone_number TEXT,
-    primary_contact_name TEXT NOT NULL,
-    primary_contact_email TEXT NOT NULL,
-    secondary_contact_name TEXT,
-    secondary_contact_email TEXT,
     PRIMARY KEY (centre_id),
     FOREIGN KEY (country_id) REFERENCES countries(country_id)
 );
+
+CREATE TABLE IF NOT EXISTS centre_contacts (
+    centre_contact_id SERIAL PRIMARY KEY,
+    centre_id TEXT NOT NULL,
+    contact_name TEXT NOT NULL,
+    contact_email TEXT NOT NULL,
+    primary_contact BOOLEAN,
+    FOREIGN KEY centre_id REFERENCES centres(centre_id)
+)
 
 CREATE TABLE IF NOT EXISTS examiner_roles (
     examiner_role_id SERIAL PRIMARY KEY,
@@ -149,7 +155,7 @@ CREATE TABLE IF NOT EXISTS common_wrong_answers (
     wrong_answer TEXT NOT NULL,
     FOREIGN KEY (version_id) REFERENCES versions(version_id),
     FOREIGN KEY (answer_id) REFERENCES answer_keys(answer_id)
-)
+);
 
 CREATE TABLE IF NOT EXISTS uploads (
     upload_id TEXT GENERATED ALWAYS AS (session_id || '-' || centre_id || '-' || part_delivery) STORED,
