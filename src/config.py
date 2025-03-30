@@ -7,6 +7,7 @@ env_file = f".env.{ENV}"
 
 load_dotenv(env_file)
 
+SQL_DB = os.getenv("SQL_DB")
 DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
@@ -16,6 +17,7 @@ LEGACY_DB_HOST = os.getenv("LEGACY_DB_HOST")
 LEGACY_DB_NAME = os.getenv("LEGACY_DB_NAME")
 USERDOMAIN = os.getenv("USERDOMAIN")
 USERNAME = os.getenv("USERNAME")
+## also include DRIVER for SQL Server
 
 # debug mode
 parser = argparse.ArgumentParser()

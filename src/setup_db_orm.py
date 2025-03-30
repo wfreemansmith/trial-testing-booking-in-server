@@ -1,0 +1,66 @@
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import MetaData, text
+from logger import logger
+from db import get_database
+from models import Base, Sessions, MAPPER
+import csv
+import os
+import json
+
+
+def reset_database(engine):
+    """Drops all tables and recreates them"""
+    # get all existing tables in database
+    metadata = MetaData()
+    metadata.reflect(bind=engine)
+
+    # drop all tables
+    logger.info("Dropping tables...")
+    with engine.begin() as conn:
+        for table in reversed(metadata.sorted_tables):
+            logger.debug(f"Dropping {table.name}")
+            conn.execute(text(f"DROP TABLE IF EXISTS {table.name} CASCADE;"))
+
+    # create all tables
+    logger.info('Creating database tables...')
+    Base.metadata.create_all(engine)
+
+
+def seed_data_from_csv(session: Session, tablename: str, csv_filepath: str):
+    """Seeds data from a given CSV file to a given table"""
+
+    with open(csv_filepath, "r", encoding="utf-8-sig") as file:
+        reader = csv.DictReader(file)
+        data = [row for row in reader]
+
+    logger.debug(f"Inserting {len(data)} entries into table '{tablename}'")
+
+    Model = MAPPER[tablename]
+    session.bulk_insert_mappings(Model, data)
+
+
+def setup_database():
+    """Sets up and seeds database"""
+    engine = get_database()
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    reset_database(engine)
+    
+    ### NB - create all models and map them
+
+    # iterates through all data and inputs
+    for root, _, files in os.walk(os.path.join("db", "data")):
+        for file in files:
+            tablename = os.path.splitext(file)[0].split('.')[1]
+            csv_filepath = os.path.join(root, file)
+            seed_data_from_csv(
+                session=session,
+                tablename=tablename,
+                csv_filepath=csv_filepath
+                )
+
+
+
+if __name__ == "__main__":
+    setup_database()
