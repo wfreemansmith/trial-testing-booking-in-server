@@ -2,6 +2,7 @@ SELECT
 	PretestCentreNumber AS centre_id,
 	LiveCentreNumber AS live_centre_number,
 	Name AS 'centre_name',
+	Partner AS 'partner',
 	Address1 AS 'address_1',
 	Address2 AS 'address_2',
 	Address3 AS 'address_3',

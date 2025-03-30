@@ -18,7 +18,7 @@ def read_csv(csv_file_path):
     
 
 def clean_centre_data(data):
-    """Cleans centre data"""
+    """Cleans centre data from legacy DB for SQL upload"""
 
     centre_data = []
 
@@ -31,7 +31,7 @@ def clean_centre_data(data):
     return centre_data
 
 def clean_contact_data(data):
-    """Prepares contact data"""
+    """Prepares centre contact data from legacy DB for SQL upload"""
 
     contact_data = []
 
@@ -71,20 +71,18 @@ def setup_database():
             dao.insert_many(tablename, headers, data)
     
     # gets centre data from legacy database
-    legacy_conn = get_legacy_database_connection()
-    legacy_dao = DAO(legacy_conn)
-    result = legacy_dao.run_sql_file("db/legacy_db_queries/select_centres.sql")
-    data = result.fetchall()
+    # legacy_conn = get_legacy_database_connection()
+    # legacy_dao = DAO(legacy_conn)
+    # result = legacy_dao.run_sql_file("db/legacy_db_queries/select_centres.sql")
+    # data = result.fetchall()
 
-    centre_data = clean_centre_data(data)
-    center_headers = ['centre_id', 'live_centre_number', 'centre_name', 'address_1', 'address_2', 'address_3', 'address_4', 'address_5', 'country_id', 'phone_number']
-    dao.insert_many('centres', center_headers, centre_data)
+    # centre_data = clean_centre_data(data)
+    # center_headers = ['centre_id', 'live_centre_number', 'centre_name', 'partner', 'address_1', 'address_2', 'address_3', 'address_4', 'address_5', 'country_id', 'phone_number']
+    # dao.insert_many('centres', center_headers, centre_data)
     
-    contact_data = clean_contact_data(data)
-    contact_headers = ['centre_id', 'contact_name', 'contact_email', 'primary_contact']
-    dao.insert_many('centre_contacts', contact_headers, contact_data)
-
-    # USE DAO TO INSERT HERE
+    # contact_data = clean_contact_data(data)
+    # contact_headers = ['centre_id', 'contact_name', 'contact_email', 'primary_contact']
+    # dao.insert_many('centre_contacts', contact_headers, contact_data)
 
     # commit changes to db & close connection
     dao.close()

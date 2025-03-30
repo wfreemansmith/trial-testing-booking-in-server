@@ -2,9 +2,11 @@
 DROP TABLE IF EXISTS file_uploads;
 DROP TABLE IF EXISTS candidates;
 DROP TABLE IF EXISTS uploads;
+DROP TABLE IF EXISTS partners;
 DROP TABLE IF EXISTS common_wrong_answers;
 DROP TABLE IF EXISTS answer_keys;
 DROP TABLE IF EXISTS versions;
+DROP TABLE IF EXISTS components;
 DROP TABLE IF EXISTS examiner_availability;
 DROP TABLE IF EXISTS examiners;
 DROP TABLE IF EXISTS examiner_roles;
@@ -14,7 +16,7 @@ DROP TABLE IF EXISTS languages;
 DROP TABLE IF EXISTS countries;
 DROP TABLE IF EXISTS language_families;
 DROP TABLE IF EXISTS sessions;
-DROP TABLE IF EXISTS examiner_payment_rates
+DROP TABLE IF EXISTS examiner_payment_rates;
 DROP TABLE IF EXISTS candidate_feedback;
 
 -- Create tables
@@ -37,12 +39,12 @@ CREATE TABLE IF NOT EXISTS examiner_payment_rates ( -- NEED TO FIX THIS
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
-    session_id INT NOT NULL,
-    session_name VARCHAR(50) NOT NULL,
+    session_id SERIAL PRIMARY KEY,
+    session_name TEXT NOT NULL,
+    -- session_name TEXT GENERATED ALWAYS AS (TO_CHAR(session_start, 'Mon') || '-' || TO_CHAR(session_end, 'Mon YYYY')) STORED,
     session_start DATE NOT NULL,
     session_end DATE NOT NULL,
-    session_upload_destination TEXT,
-    PRIMARY KEY (session_id)
+    session_upload_destination TEXT
 );
 
 CREATE TABLE IF NOT EXISTS language_families (
@@ -71,6 +73,7 @@ CREATE TABLE IF NOT EXISTS centres (
     centre_id CHAR(4) NOT NULL CHECK (centre_id ~ '^[0-9]{4}$'),
     live_centre_number VARCHAR(7),
     centre_name TEXT NOT NULL,
+    partner TEXT,
     address_1 TEXT,
     address_2 TEXT,
     address_3 TEXT,
@@ -84,12 +87,12 @@ CREATE TABLE IF NOT EXISTS centres (
 
 CREATE TABLE IF NOT EXISTS centre_contacts (
     centre_contact_id SERIAL PRIMARY KEY,
-    centre_id TEXT NOT NULL,
+    centre_id CHAR(4) NOT NULL,
     contact_name TEXT NOT NULL,
     contact_email TEXT NOT NULL,
-    primary_contact BOOLEAN,
-    FOREIGN KEY centre_id REFERENCES centres(centre_id)
-)
+    primary_contact BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (centre_id) REFERENCES centres(centre_id) ON DELETE CASCADE
+);
 
 CREATE TABLE IF NOT EXISTS examiner_roles (
     examiner_role_id SERIAL PRIMARY KEY,
@@ -120,16 +123,22 @@ CREATE TABLE IF NOT EXISTS examiner_availability (
     FOREIGN KEY (examiner_id) REFERENCES examiners(examiner_id)
 );
 
+CREATE TABLE IF NOT EXISTS components (
+    component_id CHAR(1) PRIMARY KEY,
+    description TEXT
+);
+
 CREATE TABLE IF NOT EXISTS versions (
-    version_id TEXT GENERATED ALWAYS AS (paper || LEFT(component, 1) || version_name) STORED,
+    version_id TEXT GENERATED ALWAYS AS (paper || component_id || version_name) STORED,
     paper VARCHAR(2) DEFAULT '', -- AC or GT
-    component TEXT NOT NULL, -- 'Reading', 'Listening' or 'Writing'
+    component_id CHAR(1) NOT NULL,
     version_name TEXT NOT NULL,
     report_writer_1 INT,
     report_writer_2 INT,
     back_up_examiner_1 INT,
     back_up_examiner_2 INT,
     PRIMARY KEY (version_id),
+    FOREIGN KEY (component_id) REFERENCES components(component_id),
     FOREIGN KEY (report_writer_1) REFERENCES examiners(examiner_id),
     FOREIGN KEY (report_writer_2) REFERENCES examiners(examiner_id),
     FOREIGN KEY (back_up_examiner_1) REFERENCES examiners(examiner_id),
@@ -141,8 +150,8 @@ CREATE TABLE IF NOT EXISTS answer_keys (
     version_id TEXT NOT NULL,
     question_number INT NOT NULL,
     answer TEXT NOT NULL,
-    productive_answer BOOLEAN,
-    anchor_question BOOLEAN NOT NULL,
+    productive_answer BOOLEAN DEFAULT FALSE,
+    anchor_question BOOLEAN NOT NULL DEFAULT FALSE,
     ccf_code CHAR(1) NOT NULL,
     PRIMARY KEY (answer_id),
     FOREIGN KEY (version_id) REFERENCES versions(version_id)
