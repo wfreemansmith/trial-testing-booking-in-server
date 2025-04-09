@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -11,6 +12,15 @@ class Sessions(Base):
     session_end = Column(Date, nullable=False)
     session_upload_destination = Column(String)
 
+
+def get_model_by_tablename(tablename: str):
+    """Uses table name to return the relevant ORM model class"""
+    for mapper in Base.registry.mappers:
+        model = mapper.class_
+        if hasattr(model, "__tablename__") and model.__tablename__ == tablename:
+            return model
+    return None
+        
 
 MAPPER = {
     "sessions": Sessions
