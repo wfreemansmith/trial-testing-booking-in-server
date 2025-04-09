@@ -2,7 +2,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import MetaData, text
 from logger import logger
 from db import get_database
-from models import Base, Sessions, get_model_by_tablename
+from models import Base, get_model_by_tablename
 import csv
 import os
 import json
@@ -28,15 +28,15 @@ def reset_database(engine):
 
 def seed_data_from_csv(session: Session, tablename: str, csv_filepath: str):
     """Seeds data from a given CSV file to a given table"""
-
-    with open(csv_filepath, "r", encoding="utf-8-sig") as file:
-        reader = csv.DictReader(file)
-        data = [row for row in reader]
-
     Model = get_model_by_tablename(tablename)
+
     if Model:
+        with open(csv_filepath, "r", encoding="utf-8-sig") as file:
+            reader = csv.DictReader(file)
+            data = [Model(**row) for row in reader]
         logger.debug(f"Inserting {len(data)} entries into table '{tablename}'")
-        session.bulk_insert_mappings(Model, data)
+        session.add_all(data)
+        session.commit()
     else:
         logger.error(f"Cannot find a table by the name '{tablename}' in ORM.")
 
