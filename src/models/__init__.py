@@ -1,16 +1,407 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint
+from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-class Sessions(Base):
-    __tablename__ = "sessions"
+class CandidateFeedback(Base):
+    __tablename__ = "candidate_feedback"
+
+    # provided fields
+    bandscore = Column(String(50), primary_key=True)
+    listening_feedback = Column(Text)
+    reading_feedback = Column(Text)
+    writing_feedback = Column(Text)
+
+
+class ExaminerPaymentRate(Base):
+    __tablename__ = "examiner_payment_rates"
+
+    # provided fields
+    rate_id = Column(Integer, primary_key=True)
+    location = Column(String(50))
+    currency = Column(String(3))
+    component = Column(String(2))
+    item = Column(String(50))
+    rate = Column(Numeric(10,2))
+    unit = Column(String(10))
+    holiday_rate = Column(Float)
+
+
+class MarkingWindow(Base):
+    __tablename__ = "marking_windows"
+
+    # generated fields
     session_id = Column(Integer, primary_key=True, autoincrement=True)
-    session_name = Column(String, nullable=False)
+    # provided fields
+    session_name = Column(String(50), nullable=False)
     session_start = Column(Date, nullable=False)
     session_end = Column(Date, nullable=False)
     session_upload_destination = Column(String)
+
+    # marking_window
+    uploads = relationship("Upload", back_populates="marking_window")
+
+
+class LanguageFamily(Base):
+    __tablename__ = "language_families"
+    
+    # generated fields
+    language_fam_id = Column(Integer, primary_key=True, autoincrement=True)
+    # provided fields
+    language_family = Column(String, nullable=False)
+
+    # relationships
+    countries = relationship("Country", back_populates="language_family")
+    languages = relationship("Language", back_populates="language_family")
+
+
+class Country(Base):
+    __tablename__ = "countries"
+    
+    # provided fields
+    country_id = Column(Integer, primary_key=True)
+    country = Column(String, nullable=False)
+    language_fam_id = Column(Integer, ForeignKey("language_families.language_fam_id"))
+
+    # relationships
+    language_family = relationship("LanguageFamily", back_populates="countries")
+    centres = relationship("Centre", back_populates="country")
+
+
+class Language(Base):
+    __tablename__ = "languages"
+
+    # provided fields
+    language_id = Column(Integer, primary_key=True)
+    language = Column(String, nullable=False)
+    language_fam_id = Column(Integer, ForeignKey("language_families.language_fam_id"))
+
+    # relationships
+    language_family = relationship("LanguageFamily", back_populates="languages")
+
+
+class Centre(Base):
+    __tablename__ = "centres"
+
+    # provided fields
+    centre_id = Column(String(4), CheckConstraint("centre_id ~ '^[0-9]{4}$'", name="centre_id_check"), primary_key=True)
+    live_centre_number = Column(String)
+    centre_name = Column(String, nullable=False)
+    partner = Column(String, nullable=False)
+    address_1 = Column(String)
+    address_2 = Column(String)
+    address_3 = Column(String)
+    address_4 = Column(String)
+    address_5 = Column(String)
+    tax_id = Column(String)
+    country_id = Column(Integer, ForeignKey("countries.country_id"))
+    phone_number = Column(String)
+
+    # relationships
+    country = relationship("Country", back_populates="centres")
+    contacts = relationship("CentreContact", back_populates="centre")
+    uploads = relationship("Upload", back_populates="centre")
+
+
+class CentreContact(Base):
+    __tablename__ = "centre_contacts"
+
+    # generated fields
+    centre_contact_id = Column(Integer, primary_key=True, autoincrement=True)
+    # provided fields
+    centre_id = Column(String(4), ForeignKey("centres.centre_id"), nullable=False)
+    contact_name = Column(String, nullable=False)
+    contact_email = Column(String, nullable=False)
+    primary_contact = Column(Boolean, default=False)
+
+    # relationships
+    centre = relationship("Centre", back_populates="contacts")
+
+
+class ExaminerRole(Base):
+    __tablename__ = "examiner_roles"
+
+    # generated fields
+    examiner_role_id = Column(Integer, primary_key=True, autoincrement=True)
+    # provided fields
+    examiner_role = Column(String, nullable=False)
+
+    # relationships
+    examiners = relationship("Examiner", back_populates="examiner_role")
+
+
+class Examiner(Base):
+    __tablename__ = "examiners"
+
+    # generated fields
+    examiner_id = Column(Integer, primary_key=True, autoincrement=True)
+    # provided fields
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+    contact_email = Column(String, nullable=False)
+    as_id = Column(Integer, nullable=False)
+    country = Column(String)
+    currency = Column(String)
+    examiner_role_id = Column(Integer, ForeignKey("examiner_roles.examiner_role_id"))
+    last_contract_signed = Column(String)
+    active = Column(Boolean, default=False)
+
+    # relationships
+    examiner_role = relationship("ExaminerRole", back_populates="examiners")
+    availability = relationship("ExaminerAvailability", back_populates="examiner")
+    marking_candidates = relationship("Candidate", back_populates="examiner")
+    reports = relationship("VersionReport", back_populates="examiner")
+
+    # validation
+    @validates('active')
+    def convert_to_boolean(self, key, value):
+        if isinstance(value, str):
+            return value.strip().lower() in ('true', '1', 'yes', 'y')
+        return bool(value)
+
+
+class ExaminerAvailability(Base):
+    __tablename__ = "examiner_availabilty"
+
+    # generated fields
+    week_id = Column(Integer, primary_key=True, autoincrement=True)
+    # provided fields
+    examiner_id = Column(Integer, ForeignKey("examiners.examiner_id"), nullable=False)
+    week_beginning = Column(Date, nullable=False)
+    week_ending = Column(Date, nullable=False)
+    script_availability = Column(Integer, default=0)
+    remaining_scripts = Column(Integer, default=0)
+
+    # relationships
+    examiner = relationship("Examiner", back_populates="availability")
+    
+
+class Component(Base):
+    __tablename__ = "components"
+
+    # provided fields
+    component_id = Column(String(1), primary_key=True)
+    description = Column(String)
+
+    # relationships
+    versions = relationship("Version", back_populates="component")
+
+
+class Version(Base):
+    __tablename__ = "versions"
+
+    # generated fields
+    version_id = Column(String, primary_key=True)
+    # provided fields
+    paper = Column(String(2), default="")
+    component_id = Column(String(1), ForeignKey('components.component_id'), nullable=False)
+    version_name = Column(String, nullable=False)
+
+    # relationships
+    component = relationship("Component", back_populates="versions")
+    answer_key = relationship("AnswerKey", back_populates="version")
+    candidates = relationship("Candidate", back_populates="version")
+    reports = relationship("VersionReport", back_populates="version")
+    cwas = relationship("CommonWrongAnswer", back_populates="version")
+    candidates = relationship(
+        "Candidate",
+        primaryjoin="""or_(
+            Candidate.writing_version_id == Version.version_id,
+            Candidate.reading_version_id == Version.version_id,
+            Candidate.listening_version_id == Version.version_id
+        )""",
+        viewonly=True
+        )
+    responses = relationship("CandidateResponse", back_populates="version")
+    
+    # validation
+    @validates('paper', 'component_id', 'version_name')
+    def generate_id(self, key, value):
+        setattr(self, key, value)
+        self.version_id = f"{self.paper}{self.component_id}{self.version_name}"
+        return value
+
+
+class VersionReport(Base):
+    __tablename__ = "version_reports"
+
+     # provided fields
+    report_id = Column(Integer, primary_key=True)
+    version_id = Column(String, ForeignKey("versions.version_id"), nullable=False)
+    examiner_id = Column(Integer, ForeignKey("examiners.examiner_id"))
+    date_requested = Column(Date)
+    deadline_date = Column(Date)
+    date_returned = Column(Date)
+
+    # relationships
+    version = relationship("Version", back_populates="reports")
+    examiner = relationship("Examiner", back_populates="reports")
+
+
+class AnswerKey(Base):
+    __tablename__ = "answer_keys"
+
+    # generated fields
+    answer_id = Column(String, primary_key=True)
+    # provided fields
+    version_id = Column(String, ForeignKey("versions.version_id"), nullable=False)
+    question_number = Column(Integer, nullable=False)
+    answer = Column(String, nullable=False)
+    productive_answer = Column(Boolean, default=False)
+    anchor_question = Column(Boolean, default=False)
+    ccf_code = Column(String(1), nullable=False)
+    question_code = Column(String(1))
+
+    # relationships
+    version = relationship("Version", back_populates="answer_key")
+    responses = relationship("CandidateResponse", back_populates="answer_key")
+    cwas = relationship("CommonWrongAnswer", back_populates="answer")
+
+    # validation
+    @validates('version_id', 'question_number')
+    def generate_id(self, key, value):
+        setattr(self, key, value)
+        if self.version_id and self.question_number:
+            self.answer_id = f"{self.version_id}-{self.question_number}"
+        return value
+
+    @validates('productive_answer', 'anchor_question')
+    def convert_to_boolean(self, key, value):
+        if isinstance(value, str):
+            return value.strip().lower() in ('true', '1', 'yes', 'y')
+        return bool(value)
+    
+    ## ADD IN SOME SORT OF AUTO FUNCTION TO GET CCF CODE
+
+
+class CommonWrongAnswer(Base):
+    __tablename__ = "common_wrong_answers"
+
+    # generated fields
+    cwa_id = Column(Integer, primary_key=True, autoincrement=True)
+    # provided fields
+    version_id = Column(String, ForeignKey("versions.version_id"), nullable=False)
+    answer_id = Column(String, ForeignKey("answer_keys.answer_id"), nullable=False)
+    wrong_answer = Column(String, nullable=False)
+
+    # relationships
+    version = relationship("Version", back_populates="cwas")
+    answer = relationship("AnswerKey", back_populates="cwas")
+
+
+class Upload(Base):
+    __tablename__ = 'uploads'
+
+    # generated fields
+    upload_id = Column(String, primary_key=True)
+    # provided fields
+    session_id = Column(Integer, ForeignKey("marking_windows.session_id"), nullable=False)
+    centre_id = Column(String(4), ForeignKey("centres.centre_id"), nullable=False)
+    part_delivery = Column(String(2), nullable=False)
+    epd_number = Column(String(9))
+    test_date = Column(Date)
+    upload_date = Column(Date, server_default=func.now())
+    rescan_needed = Column(Boolean, default=False)
+    sent_date = Column(Date)
+
+    # relationships
+    marking_window = relationship("MarkingWindow", back_populates="uploads")
+    centre = relationship("Centre", back_populates="uploads")
+    candidates = relationship("Candidate", back_populates='batch')
+    file_uploads = relationship('FileUpload', back_populates='batch')
+
+    # validation
+    @validates('session_id', 'centre_id', 'part_delivery')
+    def generate_id(self, key, value):
+        setattr(self, key, value)
+        if self.session_id and self.centre_id and self.part_delivery:
+            self.upload_id = f"{self.session_id}-{self.centre_id}-{self.part_delivery}"
+        return value
+    
+
+class Candidate(Base):
+    __tablename__ = 'candidates'
+
+    # generated fields
+    candidate_id = Column(String, primary_key=True)
+    # provided fields
+    upload_id = Column(String, ForeignKey('uploads.upload_id'), nullable=False)
+    candidate_number = Column(Integer, nullable=False)
+    candidate_name = Column(String, nullable=False)
+    paper_sat = Column(String(2), default="") ## NB - make paper a table? Put validation around it
+    language_id = Column(Integer, ForeignKey('languages.language_id'))
+    writing_version_id = Column(String, ForeignKey('versions.version_id'))
+    reading_version_id = Column(String, ForeignKey('versions.version_id'))
+    listening_version_id = Column(String, ForeignKey('versions.version_id'))
+    examiner_id = Column(Integer, ForeignKey('examiners.examiner_id'))
+    writing_t1_ta = Column(Integer)
+    writing_t1_cc = Column(Integer)
+    writing_t1_lr = Column(Integer)
+    writing_t1_gra = Column(Integer)
+    writing_t2_ta = Column(Integer)
+    writing_t2_cc = Column(Integer)
+    writing_t2_lr = Column(Integer)
+    writing_t2_gra = Column(Integer)
+
+    # relationships
+    batch = relationship('Upload', back_populates='candidates')
+    examiner = relationship('Examiner', back_populates='marking_candidates')
+    writing_version = relationship("Version", foreign_keys=[writing_version_id])
+    reading_version = relationship("Version", foreign_keys=[reading_version_id])
+    listening_version = relationship("Version", foreign_keys=[listening_version_id])
+    responses = relationship('CandidateResponse', back_populates='candidate')
+
+    # validation
+    @validates('upload_id', 'candidate_number')
+    def generate_id(self, key, value):
+        setattr(self, key, value)
+        if self.upload_id and self.candidate_number:
+            self.candidate_id_id = f"{self.upload_id}-{str(self.candidate_number).zfill(4)}"
+        return value
+
+
+class CandidateResponse(Base):
+    __tablename__ = 'candidate_responses'
+
+    # generated fields
+    response_id = Column(Integer, primary_key=True, autoincrement=True)
+    answer_id = Column(String, ForeignKey('answer_keys.answer_id'))
+    # provided fields
+    candidate_id = Column(String, ForeignKey('candidates.candidate_id'))
+    version_id = Column(String, ForeignKey('versions.version_id'), nullable=False)
+    question_number = Column(Integer, nullable=False)
+    response = Column(String)
+
+    # relationships
+    candidate = relationship('Candidate', back_populates='responses')
+    version = relationship('Version', back_populates='responses')
+    answer_key = relationship('AnswerKey', back_populates='responses')
+
+    # validation
+    @validates('version_id', 'question_number')
+    def generate_id(self, key, value):
+        setattr(self, key, value)
+        if self.version_id and self.question_number:
+            self.answer_id = f"{self.version_id}-{self.question_number}"
+        return value
+
+
+class FileUpload(Base):
+    __tablename__ = 'file_uploads'
+
+    # generated fields
+    file_upload_id = Column(Integer, primary_key=True, autoincrement=True)
+    # provided fields
+    upload_id = Column(String, ForeignKey('uploads.upload_id'), nullable=False)
+    version_id = Column(String, ForeignKey('versions.version_id'), nullable=False)
+    file_name = Column(String, nullable=False)
+    is_rescan = Column(Boolean, default=False)
+
+    # relationships
+    batch = relationship('Upload', back_populates='file_uploads')
+    version = relationship('Version', foreign_keys=[version_id])
 
 
 def get_model_by_tablename(tablename: str):
@@ -20,20 +411,3 @@ def get_model_by_tablename(tablename: str):
         if hasattr(model, "__tablename__") and model.__tablename__ == tablename:
             return model
     return None
-        
-
-MAPPER = {
-    "sessions": Sessions
-}
-
-# from sqlalchemy import Column, Integer, String
-# from sqlalchemy.ext.declarative import declarative_base
-
-# Base = declarative_base()
-
-# class Candidate(Base):
-#     __tablename__ = 'candidates'
-
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     name = Column(String, nullable=False)
-#     email = Column(String, unique=True, nullable=False)

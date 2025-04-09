@@ -1,4 +1,4 @@
-﻿first_name,last_name,contact_email,as_id,country,currency,examiner_role_id,contract_signed,active
+﻿first_name,last_name,contact_email,as_id,country,currency,examiner_role_id,last_contract_signed,active
 Adam,Rudrum,adamrudrum@hotmail.com,825329,UK,GBP,2,Aug-24,TRUE
 Adnan,Wali,adnanwali@hotmail.com,822919,UK,GBP,2,Aug-24,TRUE
 Agnes,Nagy-Walton,agnes.nagy-walton@idp.com,826549,CAN,CAD,2,Aug-24,TRUE
