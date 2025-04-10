@@ -5,7 +5,6 @@ from db import get_database
 from models import Base, get_model_by_tablename
 import csv
 import os
-import json
 
 
 def reset_database(engine):
@@ -41,16 +40,9 @@ def seed_data_from_csv(session: Session, tablename: str, csv_filepath: str):
         logger.error(f"Cannot find a table by the name '{tablename}' in ORM.")
 
 
-def setup_database():
+def setup_database(session: Session):
     """Sets up and seeds database"""
-    engine = get_database()
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    reset_database(engine)
     
-    ### NB - create all models and map them
-
     # iterates through all data and inputs
     for root, _, files in os.walk(os.path.join("db", "data")):
         for file in files:
@@ -65,4 +57,9 @@ def setup_database():
 
 
 if __name__ == "__main__":
-    setup_database()
+    engine = get_database()
+    new_session = sessionmaker(bind=engine)
+    session = new_session()
+
+    reset_database(engine)
+    setup_database(session)
