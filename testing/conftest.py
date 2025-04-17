@@ -8,7 +8,7 @@ from src.db import get_database
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 @pytest.fixture
-def setup():
+def setup_teardown():
     """Sets up and tears down test db data"""
     engine = get_database()
     Session = sessionmaker(bind=engine)
@@ -20,4 +20,3 @@ def setup():
     yield session
 
     session.close()
-

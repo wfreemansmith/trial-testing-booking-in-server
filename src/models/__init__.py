@@ -309,7 +309,7 @@ class Upload(Base):
     # relationships
     marking_window = relationship("MarkingWindow", back_populates="uploads")
     centre = relationship("Centre", back_populates="uploads")
-    candidates = relationship("Candidate", back_populates='batch', cascade="all, delete-orphan")
+    candidates = relationship("Candidate", back_populates='batch')
     file_uploads = relationship('FileUpload', back_populates='batch')
 
     # validation
