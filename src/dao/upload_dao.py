@@ -53,5 +53,3 @@ class UploadDAO():
 
         data = [Upload(**item) for item in data]
         self.session.add_all(data)
-
-
