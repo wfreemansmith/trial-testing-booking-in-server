@@ -1,8 +1,8 @@
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import MetaData, text
-from logger import logger
-from db import get_database
-from models import Base, get_model_by_tablename
+from src.logger import logger
+from src.db import get_database
+from src.models import Base, get_model_by_tablename
 import csv
 import os
 

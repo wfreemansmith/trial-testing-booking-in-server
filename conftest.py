@@ -1,14 +1,10 @@
-import sys
-import os
 import pytest
 from sqlalchemy.orm import sessionmaker
 from src.setup_db_orm import setup_database, reset_database
 from src.db import get_database
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 @pytest.fixture
-def setup():
+def db_session():
     """Sets up and tears down test db data"""
     engine = get_database()
     Session = sessionmaker(bind=engine)
