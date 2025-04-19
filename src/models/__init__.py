@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, validates
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, validates, declarative_base
 
 Base = declarative_base()
 
@@ -210,11 +209,11 @@ class Version(Base):
     responses = relationship("CandidateResponse", back_populates="version")
     
     # validation
-    @validates("paper")
-    def validate_paper(self, key, value):
-        if value not in ("", "AC", "GT"):
-            raise ValueError(f"Invalid paper value: {value}")
-        return value
+    # @validates("paper")
+    # def validate_paper(self, key, value):
+    #     if value not in ("", "AC", "GT"):
+    #         raise ValueError(f"Invalid paper value: {value}")
+    #     return value
 
     @validates('paper', 'component_id', 'version_name')
     def generate_id(self, key, value):
@@ -358,18 +357,18 @@ class Candidate(Base):
     Candidate can belong to one Upload
     Candidate can belong to one batch for each component"""
     __tablename__ = 'candidates'
-    __table_args__ = (
-        UniqueConstraint('upload_id', 'candidate_number', name='uq_candidate_upload_number')
-        )
+    # __table_args__ = (
+    #     UniqueConstraint('upload_id', 'candidate_number', name='uq_candidate_upload_number')
+    #     )
 
     # generated fields
     candidate_id = Column(String, primary_key=True)
-    # provided fields
+    # inherited fields
     upload_id = Column(String, ForeignKey('uploads.upload_id'), nullable=False)
+    # provided fields
     candidate_number = Column(Integer, nullable=False)
     candidate_name = Column(String, nullable=False)
-    paper_sat = Column(String(2), default="")
-    language_id = Column(Integer, ForeignKey('languages.language_id'))
+    paper_sat = Column(String(2))
     writing_batch_id = Column(String, ForeignKey('batches.batch_id', ondelete="SET NULL"))
     reading_batch_id = Column(String, ForeignKey('batches.batch_id', ondelete="SET NULL"))
     listening_batch_id = Column(String, ForeignKey('batches.batch_id', ondelete="SET NULL"))
@@ -381,6 +380,7 @@ class Candidate(Base):
     writing_t2_cc = Column(Integer)
     writing_t2_lr = Column(Integer)
     writing_t2_gra = Column(Integer)
+    language_id = Column(Integer, ForeignKey('languages.language_id'))
 
     # relationships
     upload = relationship('Upload', back_populates='candidates')
@@ -393,7 +393,7 @@ class Candidate(Base):
     # validation
     @validates("paper_sat")
     def validate_paper(self, key, value):
-        if value not in ("", "AC", "GT"):
+        if value not in ("AC", "GT"):
             raise ValueError(f"Invalid paper value: {value}")
         return value
     
@@ -436,8 +436,9 @@ class FileUpload(Base):
 
     # generated fields
     file_upload_id = Column(Integer, primary_key=True, autoincrement=True)
-    # provided fields
+    # inherited fields
     batch_id = Column(String, ForeignKey('batches.batch_id'), nullable=False)
+    # provided fields
     file_name = Column(String, nullable=False)
     is_rescan = Column(Boolean, default=False)
 
