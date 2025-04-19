@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.ext.declarative import declarative_base
@@ -151,7 +151,7 @@ class Examiner(Base):
     # relationships
     examiner_role = relationship("ExaminerRole", back_populates="examiners")
     availability = relationship("ExaminerAvailability", back_populates="examiner")
-    marking_candidates = relationship("Candidate", back_populates="examiner")
+    batches = relationship("Batch", back_populates="examiner")
     reports = relationship("VersionReport", back_populates="examiner")
 
     # validation
@@ -163,7 +163,7 @@ class Examiner(Base):
 
 
 class ExaminerAvailability(Base):
-    __tablename__ = "examiner_availabilty"
+    __tablename__ = "examiner_availability"
 
     # generated fields
     week_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -187,6 +187,7 @@ class Component(Base):
 
     # relationships
     versions = relationship("Version", back_populates="component")
+    batches = relationship("Batch", back_populates="component")
 
 
 class Version(Base):
@@ -205,18 +206,16 @@ class Version(Base):
     candidates = relationship("Candidate", back_populates="version")
     reports = relationship("VersionReport", back_populates="version")
     cwas = relationship("CommonWrongAnswer", back_populates="version")
-    candidates = relationship(
-        "Candidate",
-        primaryjoin="""or_(
-            Candidate.writing_version_id == Version.version_id,
-            Candidate.reading_version_id == Version.version_id,
-            Candidate.listening_version_id == Version.version_id
-        )""",
-        viewonly=True
-        )
+    batches = relationship("Batch", back_populates="version")
     responses = relationship("CandidateResponse", back_populates="version")
     
     # validation
+    @validates("paper")
+    def validate_paper(self, key, value):
+        if value not in ("", "AC", "GT"):
+            raise ValueError(f"Invalid paper value: {value}")
+        return value
+
     @validates('paper', 'component_id', 'version_name')
     def generate_id(self, key, value):
         setattr(self, key, value)
@@ -309,8 +308,8 @@ class Upload(Base):
     # relationships
     marking_window = relationship("MarkingWindow", back_populates="uploads")
     centre = relationship("Centre", back_populates="uploads")
-    candidates = relationship("Candidate", back_populates='batch', cascade="all, delete-orphan")
-    file_uploads = relationship('FileUpload', back_populates='batch')
+    batches = relationship("Batch", back_populates='upload', cascade="all, delete-orphan")
+    candidates = relationship("Candidate", back_populates='upload', cascade="all, delete-orphan")
 
     # validation
     @validates('session_id', 'centre_id', 'part_delivery')
@@ -321,8 +320,47 @@ class Upload(Base):
         return value
     
 
+class Batch(Base):
+    """One batch created per centre upload per version*.
+    Sits between Upload, Candidate and File Upload tables.
+    *Exception would be if Writing batch is over 50, then split it"""
+    __tablename__ = 'batches'
+
+    # generated fields
+    batch_id = Column(String, primary_key=True)
+    # provided fields
+    upload_id = Column(String, ForeignKey("uploads.upload_id"))
+    version_id = Column(String, ForeignKey("versions.version_id"))
+    component_id = Column(String, ForeignKey("components.component_id"))
+    examiner_id = Column(Integer, ForeignKey('examiners.examiner_id')) # Writing Only
+
+    # relationships
+    upload = relationship("Upload", back_populates="batches")
+    version = relationship("Version", back_populates="batches")
+    component = relationship("Component", back_populates="batches")
+    examiner = relationship('Examiner', back_populates='batches')
+    writing_candidates = relationship("Candidate", back_populates="writing_batch", foreign_keys="Candidate.writing_batch_id", passive_deletes=True)
+    reading_candidates = relationship("Candidate", back_populates="reading_batch", foreign_keys="Candidate.reading_batch_id", passive_deletes=True)
+    listening_candidates = relationship("Candidate", back_populates="listening_batch", foreign_keys="Candidate.listening_batch_id", passive_deletes=True)  
+    file_uploads = relationship("FileUpload", back_populates='batch')
+
+    # validation
+    @validates('upload_id', 'version_id')
+    def generate_id(self, key, value):
+        setattr(self, key, value)
+        if self.upload_id and self.version_id:
+            self.batch_id = f"{self.upload_id}-{str(self.version_id)}"
+        return value
+    
+
 class Candidate(Base):
+    """Representing one candidate.
+    Candidate can belong to one Upload
+    Candidate can belong to one batch for each component"""
     __tablename__ = 'candidates'
+    __table_args__ = (
+        UniqueConstraint('upload_id', 'candidate_number', name='uq_candidate_upload_number')
+        )
 
     # generated fields
     candidate_id = Column(String, primary_key=True)
@@ -330,12 +368,11 @@ class Candidate(Base):
     upload_id = Column(String, ForeignKey('uploads.upload_id'), nullable=False)
     candidate_number = Column(Integer, nullable=False)
     candidate_name = Column(String, nullable=False)
-    paper_sat = Column(String(2), default="") ## NB - make paper a table? Put validation around it
+    paper_sat = Column(String(2), default="")
     language_id = Column(Integer, ForeignKey('languages.language_id'))
-    writing_version_id = Column(String, ForeignKey('versions.version_id'))
-    reading_version_id = Column(String, ForeignKey('versions.version_id'))
-    listening_version_id = Column(String, ForeignKey('versions.version_id'))
-    examiner_id = Column(Integer, ForeignKey('examiners.examiner_id'))
+    writing_batch_id = Column(String, ForeignKey('batches.batch_id', ondelete="SET NULL"))
+    reading_batch_id = Column(String, ForeignKey('batches.batch_id', ondelete="SET NULL"))
+    listening_batch_id = Column(String, ForeignKey('batches.batch_id', ondelete="SET NULL"))
     writing_t1_ta = Column(Integer)
     writing_t1_cc = Column(Integer)
     writing_t1_lr = Column(Integer)
@@ -346,19 +383,25 @@ class Candidate(Base):
     writing_t2_gra = Column(Integer)
 
     # relationships
-    batch = relationship('Upload', back_populates='candidates')
-    examiner = relationship('Examiner', back_populates='marking_candidates')
-    writing_version = relationship("Version", foreign_keys=[writing_version_id])
-    reading_version = relationship("Version", foreign_keys=[reading_version_id])
-    listening_version = relationship("Version", foreign_keys=[listening_version_id])
+    upload = relationship('Upload', back_populates='candidates')
+    language = relationship("Language", back_populates="candidates")
+    writing_batch = relationship("Batch", foreign_keys=[writing_batch_id], back_populates="writing_candidates")
+    reading_batch = relationship("Batch", foreign_keys=[reading_batch_id], back_populates="reading_candidates")
+    listening_batch = relationship("Batch", foreign_keys=[listening_batch_id], back_populates="listening_candidates")
     responses = relationship('CandidateResponse', back_populates='candidate')
 
     # validation
+    @validates("paper_sat")
+    def validate_paper(self, key, value):
+        if value not in ("", "AC", "GT"):
+            raise ValueError(f"Invalid paper value: {value}")
+        return value
+    
     @validates('upload_id', 'candidate_number')
     def generate_id(self, key, value):
         setattr(self, key, value)
         if self.upload_id and self.candidate_number:
-            self.candidate_id_id = f"{self.upload_id}-{str(self.candidate_number).zfill(4)}"
+            self.candidate_id = f"{self.upload_id}-{str(self.candidate_number).zfill(4)}"
         return value
 
 
@@ -367,7 +410,7 @@ class CandidateResponse(Base):
 
     # generated fields
     response_id = Column(Integer, primary_key=True, autoincrement=True)
-    answer_id = Column(String, ForeignKey('answer_keys.answer_id'))
+    answer_id = Column(String, ForeignKey('answer_keys.answer_id'), nullable=True)
     # provided fields
     candidate_id = Column(String, ForeignKey('candidates.candidate_id'))
     version_id = Column(String, ForeignKey('versions.version_id'), nullable=False)
@@ -394,14 +437,12 @@ class FileUpload(Base):
     # generated fields
     file_upload_id = Column(Integer, primary_key=True, autoincrement=True)
     # provided fields
-    upload_id = Column(String, ForeignKey('uploads.upload_id'), nullable=False)
-    version_id = Column(String, ForeignKey('versions.version_id'), nullable=False)
+    batch_id = Column(String, ForeignKey('batches.batch_id'), nullable=False)
     file_name = Column(String, nullable=False)
     is_rescan = Column(Boolean, default=False)
 
     # relationships
-    batch = relationship('Upload', back_populates='file_uploads')
-    version = relationship('Version', foreign_keys=[version_id])
+    batch = relationship('Batch', back_populates='file_uploads')
 
 
 def get_model_by_tablename(tablename: str):
