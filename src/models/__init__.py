@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship, validates, declarative_base
 Base = declarative_base()
 
 class CandidateFeedback(Base):
+    """Reference table for pre-written feedback offered to candidates upon return of their results. Feedback is organised by bandscore and by component"""
     __tablename__ = "candidate_feedback"
 
     # provided fields
@@ -15,6 +16,8 @@ class CandidateFeedback(Base):
 
 
 class ExaminerPaymentRate(Base):
+    """Examiner payments rates differ depending on their location, currency, and what component / item they've completed. Pay is per item (e.g. per report, per script)
+    Rate IDs and other details need to match those found on our Rates Management System."""
     __tablename__ = "examiner_payment_rates"
 
     # provided fields
@@ -29,21 +32,25 @@ class ExaminerPaymentRate(Base):
 
 
 class MarkingWindow(Base):
+    """A marking window is a period of time during which partipating centres can conduct trial tests."""
     __tablename__ = "marking_windows"
 
     # generated fields
-    session_id = Column(Integer, primary_key=True, autoincrement=True)
+    window_id = Column(Integer, primary_key=True, autoincrement=True)
     # provided fields
-    session_name = Column(String(50), nullable=False)
-    session_start = Column(Date, nullable=False)
-    session_end = Column(Date, nullable=False)
-    session_upload_destination = Column(String)
+    window_name = Column(String(50), nullable=False)
+    window_start = Column(Date, nullable=False)
+    window_end = Column(Date, nullable=False)
+    window_upload_destination = Column(String)
 
     # marking_window
     uploads = relationship("Upload", back_populates="marking_window")
+    requests = relationship("CentreRequests", back_populates="marking_window", cascade="all, delete-orphan")
 
 
 class LanguageFamily(Base):
+    """Reference table for language families, by country or by language.
+    Language family is an important concept in Trial Testing, as we will use this data to assess whether a version has been broadly tested enough."""
     __tablename__ = "language_families"
     
     # generated fields
@@ -57,6 +64,7 @@ class LanguageFamily(Base):
 
 
 class Country(Base):
+    """Representing countries that Centres are based in. Each country belongs to a LanguageFamily."""
     __tablename__ = "countries"
     
     # provided fields
@@ -70,6 +78,7 @@ class Country(Base):
 
 
 class Language(Base):
+    """Representing the first language reported by Candidates. Languages belong to LanguageFamilies."""
     __tablename__ = "languages"
 
     # provided fields
@@ -82,6 +91,7 @@ class Language(Base):
 
 
 class Centre(Base):
+    """Main table for registered Trial Test Centres"""
     __tablename__ = "centres"
 
     # provided fields
@@ -100,11 +110,13 @@ class Centre(Base):
 
     # relationships
     country = relationship("Country", back_populates="centres")
-    contacts = relationship("CentreContact", back_populates="centre")
+    contacts = relationship("CentreContact", back_populates="centre", cascade="all, delete-orphan")
     uploads = relationship("Upload", back_populates="centre")
+    requests = relationship("CentreRequests", back_populates="centre", cascade="all, delete-orphan")
 
 
 class CentreContact(Base):
+    """Each entry represents one contact at a Trial Testing Centre. Each centre can have many contacts."""
     __tablename__ = "centre_contacts"
 
     # generated fields
@@ -119,7 +131,27 @@ class CentreContact(Base):
     centre = relationship("Centre", back_populates="contacts")
 
 
+class CentreRequests(Base):
+    """Contains all centre requests by marking window. Used to create upload folders, share links, etc."""
+    __tablename__ = "centre_requests"
+
+    # generated fields
+    request_id = Column(Integer, primary_key=True, autoincrement=True)
+    # provided fields
+    window_id = Column(Integer, ForeignKey("marking_windows.window_id"))
+    centre_id = Column(String(4), ForeignKey("centres.centre_id"), nullable=False)
+    acw_requests = Column(Integer)
+    acr_requests = Column(Integer)
+    gtw_requests = Column(Integer)
+    gtr_requests = Column(Integer)
+
+    # relationships
+    marking_window = relationship("MarkingWindow", back_populates="requests")
+    centre = relationship("Centre", back_populates="requests")
+
+
 class ExaminerRole(Base):
+    """Reference table for different types of examiner, e.g. TTE, APE, PE"""
     __tablename__ = "examiner_roles"
 
     # generated fields
@@ -132,6 +164,7 @@ class ExaminerRole(Base):
 
 
 class Examiner(Base):
+    """Table containing all examiners details, including their personal details, country, as_id and role"""
     __tablename__ = "examiners"
 
     # generated fields
@@ -162,6 +195,7 @@ class Examiner(Base):
 
 
 class ExaminerAvailability(Base):
+    """For examiners to provide their weekly availability. Not linked to marking windows, just week beginning dates. Used to determine who is available to mark a batch."""
     __tablename__ = "examiner_availability"
 
     # generated fields
@@ -178,6 +212,7 @@ class ExaminerAvailability(Base):
     
 
 class Component(Base):
+    """Reference table for Academic and General Training components"""
     __tablename__ = "components"
 
     # provided fields
@@ -190,6 +225,7 @@ class Component(Base):
 
 
 class Version(Base):
+    """Contains all Trial Testing Exam Versions"""
     __tablename__ = "versions"
 
     # generated fields
@@ -223,6 +259,7 @@ class Version(Base):
 
 
 class VersionReport(Base):
+    """Table for managing writing reports, completed by examiners following a version pass"""
     __tablename__ = "version_reports"
 
      # provided fields
@@ -239,6 +276,7 @@ class VersionReport(Base):
 
 
 class AnswerKey(Base):
+    """Answer keys for Reading & Listening versions. Can compare CandidateResponses to answers in this table for auto-marking."""
     __tablename__ = "answer_keys"
 
     # generated fields
@@ -275,6 +313,7 @@ class AnswerKey(Base):
 
 
 class CommonWrongAnswer(Base):
+    """Table for automatically logging incorrect CandidateResponses to productive questions"""
     __tablename__ = "common_wrong_answers"
 
     # generated fields
@@ -290,6 +329,7 @@ class CommonWrongAnswer(Base):
 
 
 class Upload(Base):
+    """Main table for this app. Each Upload represents a register uploaded by a centre, containing Batches and Candidates."""
     __tablename__ = 'uploads'
 
     # generated fields
@@ -320,9 +360,10 @@ class Upload(Base):
     
 
 class Batch(Base):
-    """One batch created per centre upload per version*.
-    Sits between Upload, Candidate and File Upload tables.
-    *Exception would be if Writing batch is over 50, then split it"""
+    """Helper table to link Upload, Candidates and FileUploads.
+    One entry created per centre, per upload, per version*.
+    Batches are assigned to examiners and markers.
+    *Exception would be if Writing batch is over 50, then split it into a smaller batch."""
     __tablename__ = 'batches'
 
     # generated fields
@@ -353,9 +394,7 @@ class Batch(Base):
     
 
 class Candidate(Base):
-    """Representing one candidate.
-    Candidate can belong to one Upload
-    Candidate can belong to one batch for each component"""
+    """Each entry represents one candidate. Candidate can belong to one Upload, and to one Batch for each component."""
     __tablename__ = 'candidates'
     # __table_args__ = (
     #     UniqueConstraint('upload_id', 'candidate_number', name='uq_candidate_upload_number')
@@ -406,6 +445,7 @@ class Candidate(Base):
 
 
 class CandidateResponse(Base):
+    """Each entry represents a candidates' response to one Reading & Listening question. Can be compared to AnswerKey table for automarking."""
     __tablename__ = 'candidate_responses'
 
     # generated fields
@@ -432,6 +472,7 @@ class CandidateResponse(Base):
 
 
 class FileUpload(Base):
+    """Each entry represents one file, uploaded to FTP server. Files are linked to specific Batches, specific versions, and part of a specific Upload"""
     __tablename__ = 'file_uploads'
 
     # generated fields
