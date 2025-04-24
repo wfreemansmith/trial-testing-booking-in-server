@@ -13,7 +13,7 @@ def db_session():
     reset_database(engine)
     setup_database(session)
 
-    yield session
+    yield engine
 
     session.close()
 

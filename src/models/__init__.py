@@ -32,7 +32,8 @@ class ExaminerPaymentRate(Base):
 
 
 class MarkingWindow(Base):
-    """A marking window is a period of time during which partipating centres can conduct trial tests."""
+    """A marking window is a period of time during which partipating centres can conduct trial tests.
+    Also referred to as 'Sessions', however changed for the database to distinguish from SQLalchemy Sessions."""
     __tablename__ = "marking_windows"
 
     # generated fields
