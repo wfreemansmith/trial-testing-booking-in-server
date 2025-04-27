@@ -1,5 +1,5 @@
 from typing import List
-from logger import logger
+from src.logger import logger
 
 ## NB probably replace this all with SQLalchemy eventually
 
