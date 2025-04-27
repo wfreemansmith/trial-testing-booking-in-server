@@ -19,8 +19,8 @@ from src.dao.upload_dao import UploadDAO
 class TestUnitUploadDAO:
     # Happy paths
     @pytest.mark.parametrize("input_data", ([complete_upload_send_json]))
-    def test_succesful_create_upload_object(input_data, engine):
-        dao = UploadDAO(engine=engine)
+    def test_succesful_create_upload_object(self, db_session, input_data):
+        dao = UploadDAO(engine=db_session)
         upload_object = dao.create_upload_object(data=input_data)
         
         # check part delivery
@@ -42,7 +42,3 @@ class TestUnitUploadDAO:
         for expected_candidate_id in expected_candidate_ids:
             match = sum(candidate.candidate_id == expected_candidate_id for candidate in upload_object.candidates)
             assert match == 1, f"Unique Candidate IDs not initalised correctly, expected '{expected_batch_id}' but test found {match} results with that name"
-
-        
-
-        

@@ -31,8 +31,11 @@ expected_xlsx_res_1 = [
                 "candidate_name": "Mary Bloggs",
                 "paper_sat": "AC",
                 "writing_version": "IP1157",
+                "writing_version_id": "ACWIP1157",
                 "reading_version": "AP123",
+                "reading_version_id": "ACRAP123",
                 "listening_version": "BP59",
+                "listening_version_id": "LBP59",
                 "errors": []
             },
             {
@@ -40,8 +43,11 @@ expected_xlsx_res_1 = [
                 "candidate_name": "Joe Santiago",
                 "paper_sat": "AC",
                 "writing_version": "IP1157",
+                "writing_version_id": "ACWIP1157",
                 "reading_version": "AP123",
+                "reading_version_id": "ACRAP123",
                 "listening_version": "BP59",
+                "listening_version_id": "LBP59",
                 "errors": []
             },
             {
@@ -49,8 +55,11 @@ expected_xlsx_res_1 = [
                 "candidate_name": "Alice White",
                 "paper_sat": "AC",
                 "writing_version": "IP1158",
+                "writing_version_id": "ACWIP1158",
                 "reading_version": "AP123",
+                "reading_version_id": "ACRAP123",
                 "listening_version": "BP59",
+                "listening_version_id": "LBP59",
                 "errors": []
             }
         ]
