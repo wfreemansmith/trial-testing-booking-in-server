@@ -76,6 +76,7 @@ class UploadDAO():
     def insert_upload(self, data: Dict):
         """Insert a single record into 'uploads' table from a provided data dict"""
         upload = self.create_upload_object(data)
+        logger.info(f"Creating new upload on ID '{upload.upload_id}'")
         self.session.add(upload)
         self.session.commit()
 
