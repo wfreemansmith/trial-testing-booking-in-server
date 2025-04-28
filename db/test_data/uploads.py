@@ -62,7 +62,8 @@ expected_xlsx_res_1 = [
                 #"listening_version_id": "LBP59",
                 "errors": []
             }
-        ]
+        ],
+        "errors": []
     },
     {
         "filename": "test_register_2",
@@ -168,7 +169,8 @@ expected_xlsx_res_1 = [
                 "listening_version": "BP59",
                 "errors": []
             }
-        ]
+        ],
+        "errors": []
     }
 ]
 
