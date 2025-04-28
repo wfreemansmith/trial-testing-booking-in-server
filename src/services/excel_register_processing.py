@@ -26,23 +26,23 @@ class ErrorMessage(TypedDict):
     field: str
     message: str
 
-# read file
-# check candidate details are complete
-# check candidate numbers are not already in database
-## flag errors if numbers are repeated, if number & candidate are repeated do not proceed
-# check versions are in the database
-# format dataframe as a dict
+
+# create database connection
+engine = get_database()
+version_dao = VersionDAO(engine)
+candidate_dao = CandidateDAO(engine)
+versions_not_found = []
 
 
 def error_message(field, message=None) -> ErrorMessage:
-    """Appends an error to relevant array in dataframe, indicating which row and field is problematic"""
+    """Returns an error to relevant array in dataframe, indicating which row and field is problematic"""
     return {
         "field": field,
         "message": message
     }
 
 
-def validate_candidate(dao: CandidateDAO, marking_window_id: int, centre_num: str, candidate: CandidateDict, position: int) -> list:
+def validate_candidate(marking_window_id: int, centre_num: str, candidate: CandidateDict, position: int) -> List[ErrorMessage]:
     """Checks candidate dict, returns error messages if any error"""
     errors = []
     candidate_name = candidate.get("candidate_name")
@@ -58,7 +58,7 @@ def validate_candidate(dao: CandidateDAO, marking_window_id: int, centre_num: st
         errors.append(error)
 
     # check database here
-    duplicate = dao.is_duplicate_candidate(marking_window_id, centre_num, candidate_name, candidate_number)
+    duplicate = candidate_dao.is_duplicate_candidate(marking_window_id, centre_num, candidate_name, candidate_number)
     if duplicate and type(duplicate) is int:
         candidate['candidate_number'] = duplicate + position
         error = error_message("candidate_number", "Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes.")
@@ -104,17 +104,11 @@ def process_register_file(centre_num: str, marking_window_id: int, file: BinaryI
     ABSENT_KEYWORDS = ["ABSENT", "ABS", "-", ""]
     df[component_columns] = df[component_columns].replace(ABSENT_KEYWORDS, None)
 
-    # create database connection
-    engine = get_database()
-    version_dao = VersionDAO(engine)
-    candidate_dao = CandidateDAO(engine)
-
     # get version ids & make batch data
     batches_data = []
-    versions_not_found = []
 
-    version_id_cols = ['reading_version_id', 'writing_version_id', 'listening_version_id']
-    for version_id_col in version_id_cols:
+    VERSION_ID_COLS = ['reading_version_id', 'writing_version_id', 'listening_version_id']
+    for version_id_col in VERSION_ID_COLS:
         version_col_name = version_id_col.replace('_id', '')
         component_id = version_id_col[0].upper()
 
@@ -154,11 +148,12 @@ def process_register_file(centre_num: str, marking_window_id: int, file: BinaryI
     
     # check candidate numbers against database
     for position, candidate in enumerate(candidates_list):
-        errors = validate_candidate(candidate_dao, marking_window_id, centre_num, candidate, position)
-        for version_id_col in version_id_cols:
+        errors = validate_candidate(marking_window_id, centre_num, candidate, position)
+        for version_id_col in VERSION_ID_COLS:
             if candidate[version_id_col] in versions_not_found:
                 version_error = error_message(version_id_col, "This version could not be found on the database, please double check")
-                errors.append(version_error)        
+                errors.append(version_error)
+            candidate.pop(version_id_col)
         candidate['errors'].extend(errors)
 
     return candidates_list, batches_list
