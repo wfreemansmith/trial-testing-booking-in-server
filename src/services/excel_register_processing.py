@@ -1,5 +1,6 @@
 from src.db import get_database
 from typing import TypedDict, BinaryIO, List, Tuple
+from io import BytesIO
 from src.dao.candidate_dao import CandidateDAO
 from src.dao.version_dao import VersionDAO
 import pandas as pd
@@ -37,7 +38,6 @@ candidate_dao = CandidateDAO(engine)
 
 # constants
 VERSION_ID_COLS = ['reading_version_id', 'writing_version_id', 'listening_version_id']
-ABSENT_KEYWORDS = ["ABSENT", "ABS", "-", ""]
 
 
 # validation functions
@@ -50,7 +50,7 @@ def error_message(field: str, message: str | None = None) -> ErrorMessage:
 
 
 def validate_candidate(marking_window_id: int, centre_num: str, candidate: CandidateDict, position: int) -> List[ErrorMessage]:
-    """Checks candidate dict against databsae, adjusts anything which can be adjusted, returns error messages if any error"""
+    """Checks candidate dict against database, adjusts anything which can be adjusted, returns error messages if any error"""
     candidate_errors = []
     candidate_name = candidate.get("candidate_name")
     candidate_number = candidate.get("candidate_number")
@@ -103,10 +103,10 @@ def drop_empty_rows(df: DataFrame) -> DataFrame:
     return df.dropna(subset=['candidate_name'], how='all')
 
 def strip_prefixes(df: DataFrame) -> DataFrame:
-    component_columns = df.columns[3:]
+    version_columns = df.columns[3:]
     PREFIXES = ['ACW', 'ACR', 'GTR', 'GTW', 'List', 'LIST', 'L']
     for prefix in PREFIXES:
-        df[component_columns] = df[component_columns].apply(
+        df[version_columns] = df[version_columns].apply(
             lambda x: x.str.replace(prefix,'')
         )
     return df
@@ -117,10 +117,23 @@ def strip_strings(df: DataFrame) -> DataFrame:
     return df
 
 def replace_absent_candidates(df: DataFrame) -> DataFrame:
-    component_columns = df.columns[3:]
+    version_columns = df.columns[3:]
     ABSENT_KEYWORDS = ["ABSENT", "ABS", "-", ""]
-    df[component_columns] = df[component_columns].replace(ABSENT_KEYWORDS, None)
-    return df    
+    df[version_columns] = df[version_columns].replace(ABSENT_KEYWORDS, None)
+    return df
+
+def construct_version_ids(df: DataFrame) -> DataFrame:
+    version_columns = df.columns[3:]
+    for version_col in version_columns:
+        version_id_col = f"{version_col}_id"
+        component_id = version_id_col[0].upper()
+
+        if version_col == 'listening_version':
+            version_id = component_id + df[version_col]
+        else:
+            version_id = df['paper_sat'] + component_id + df[version_col]
+        df[version_id_col] = version_id
+    return df
 
 
 # main functions
@@ -129,66 +142,62 @@ def ingest_excel_file(file: BinaryIO) -> Tuple[
     List[BatchDict]
     ]:
     """Processes Excel file and returns a list of candidate dicts and a list of batch dicts"""
+    # Suppress specific openpyxl UserWarnings
+    import warnings
+    warnings.filterwarnings("ignore", category=UserWarning, message="Data Validation extension is not supported and will be removed")
+
     df = (
-        pd.read_excel(file, header=4)
+        pd.read_excel(BytesIO(file), header=4)
         .pipe(rename_columns)
         .pipe(drop_empty_rows)
         .pipe(strip_prefixes)
         .pipe(strip_strings)
         .pipe(replace_absent_candidates)
+        .pipe(construct_version_ids)
     )
 
-    # get version ids & make batch data
-    batches_data = []
-
-    for version_id_col in VERSION_ID_COLS:
-        version_col_name = version_id_col.replace('_id', '')
-        component_id = version_id_col[0].upper()
-
-        # get version id
-        if version_id_col != 'listening_version_id':
-            version_id = df['paper_sat'] + component_id + df[version_col_name]
-        else:
-            version_id = component_id + df[version_col_name]
-        df[version_id_col] = version_id
-
-        # collect batches data
-        for idx, row in df.iterrows():
-            if pd.notna(row[version_id_col]):
-                batches_data.append((row[version_id_col], component_id))
-    
-    # make batches df
-    batches_df = pd.DataFrame(batches_data, columns=['version_id', 'component_id'])
-    batches_df['errors'] = [[] for _ in range(len(batches_df))]
-    batches_df = batches_df.dropna(subset=['version_id'])
-    batches_df = batches_df.drop_duplicates(subset=['version_id'])
-    batches_df = batches_df.sort_values(by=['version_id'], ascending=True)
-
-    # get candidates dict
+    # construct list of candidate and batch dicts
     candidates_df = df.copy()
     candidates_df['errors'] = [[] for _ in range(len(candidates_df))]
     candidates_list = candidates_df.to_dict(orient="records")
     
-    # get batches dict
-    batches_list = batches_df.to_dict(orient="records")
+    seen_versions = set()
+    batches_list = []
+
+    for _, row in df.iterrows():
+        for version_id_col in VERSION_ID_COLS:
+            version_id = row[version_id_col]
+
+            if version_id not in seen_versions and pd.notna(version_id):
+                batches_list.append(
+                    {
+                        "version_id": version_id,
+                        "component_id": version_id_col[0].upper(),
+                        "errors": []
+                    }
+                )
+                seen_versions.add(version_id)
+
+    # sorts batch_list
+    batches_list.sort(key=lambda x: x['version_id'])
 
     return candidates_list, batches_list
     
 
-def check_lists(centre_num: str, marking_window_id: int, candidates_list: CandidateDict, batches_list: BatchDict) -> Tuple[
+def check_lists(centre_num: str, marking_window_id: int, candidates_list: List[CandidateDict], batches_list: List[BatchDict]) -> Tuple[
     List[CandidateDict],
     List[BatchDict],
     List[ErrorMessage]
 ]:
     """Checks list against database, attaches error messages, remove certain elements"""
-    versions_not_found = []
+    versions_not_found = set()
     errors_list = []
     # check version_id against database
     for batch in batches_list:
         version_id = batch.get('version_id', None)
         version_errors = validate_version(version_id)
         if version_errors:
-            versions_not_found.append(version_id)
+            versions_not_found.add(version_id)
             errors_list.extend(version_errors)
 
     # check candidate numbers against database
@@ -222,6 +231,7 @@ def check_lists(centre_num: str, marking_window_id: int, candidates_list: Candid
         errors_list.append(duplicate_error)
     elif not filtered_candidates_list:
         duplicate_error = error_message("candidates", "These candidates have already been uploaded to us.")
+        errors_list.append(duplicate_error)
         
     return filtered_candidates_list, filtered_batches_list, errors_list
 
