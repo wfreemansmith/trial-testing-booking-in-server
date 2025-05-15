@@ -1,11 +1,7 @@
-from sqlalchemy.orm import sessionmaker
+from src.dao import BaseDAO
 from src.logger import logger
 
-class CandidateDAO():
-    def __init__(self, engine):
-        Session = sessionmaker(bind=engine)
-        self.session = Session()
-
+class CandidateDAO(BaseDAO):
     def is_duplicate_candidate(
             self,
             marking_window_id: int,

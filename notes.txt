@@ -28,3 +28,12 @@ project_root/
 │   ├── test_candidates.py
 │
 │── README.md                   # Documentation
+
+
+TO DO:
+[ ] Authentication middleware and hash table
+[ ] Files.com services
+[ ] Refactoring postgres models into mssql models
+[ ] Flesh out upload endpoints and controllers
+[ ] Work in Pydantic models...
+[ ] Error handling

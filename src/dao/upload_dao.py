@@ -1,8 +1,8 @@
 from src.logger import logger
 from src.models import Upload, Candidate, Batch, FileUpload
+from src.dao import BaseDAO
 from src.utils import format_version_id
-from typing import List, Dict
-from sqlalchemy.orm import sessionmaker
+from typing import Dict
 from sqlalchemy import select, func, and_
 from datetime import datetime
 
@@ -18,11 +18,7 @@ from datetime import datetime
 # If ok, BE Server inputs this information into the database
 
 
-class UploadDAO():
-    def __init__(self, engine):
-        Session = sessionmaker(bind=engine)
-        self.session = Session()
-
+class UploadDAO(BaseDAO):
     def get_next_part_delivery(self, session_id: int, centre_id: str) -> str:
         """Returns next part delivery string based on count of previous uploads"""
         stmt = select(func.count()).where(
