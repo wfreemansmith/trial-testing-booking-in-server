@@ -55,7 +55,6 @@ def setup_database(session: Session):
                 )
 
 
-
 if __name__ == "__main__":
     engine = get_database()
     new_session = sessionmaker(bind=engine)
