@@ -1,8 +1,7 @@
 from src.db import get_database
 from typing import TypedDict, BinaryIO, List, Tuple
 from io import BytesIO
-from src.dao.candidate_dao import CandidateDAO
-from src.dao.version_dao import VersionDAO
+from src.dao import CandidateDAO, VersionDAO
 import pandas as pd
 from pandas import DataFrame
 
@@ -234,17 +233,3 @@ def check_lists(centre_num: str, marking_window_id: int, candidates_list: List[C
         errors_list.append(duplicate_error)
         
     return filtered_candidates_list, filtered_batches_list, errors_list
-
-
-# entry points
-def process_register_file(centre_num: str, marking_window_id: int, file: BinaryIO) -> Tuple[
-    List[CandidateDict],
-    List[BatchDict],
-    List[ErrorMessage]
-]:
-    """First pass process, processes Excel file returns JSON"""
-    # convert to list of dicts
-    candidates_list, batches_list = ingest_excel_file(file)
-    
-    # checks list of dicts and returns
-    return check_lists(centre_num, marking_window_id, candidates_list, batches_list)

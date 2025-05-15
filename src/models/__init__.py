@@ -420,6 +420,10 @@ class Candidate(Base):
     writing_t2_cc = Column(Integer)
     writing_t2_lr = Column(Integer)
     writing_t2_gra = Column(Integer)
+    writing_underlength = Column(Boolean)
+    writing_off_topic = Column(Boolean)
+    
+    # CHECK CCF DATA FOR WHAT DATA WE NEED TO HAVE IN DATA STRINGS
     language_id = Column(Integer, ForeignKey('languages.language_id'))
 
     # relationships
