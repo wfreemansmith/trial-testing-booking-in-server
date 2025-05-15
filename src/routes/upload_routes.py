@@ -6,14 +6,14 @@ import json
 router = APIRouter()
 
 
-@router.get("/upload")
+@router.get("/")
 @api_response()
 def get_context(token: str):
     """Once users first login to the page retrieves basic information about their centre"""
     print("put logic in here for getting the main info with a token")
 
 
-@router.post("/upload/preview")
+@router.post("/preview")
 @api_response()
 def preview_upload(
     token: str = Form(...),
@@ -27,21 +27,21 @@ def preview_upload(
     return upload_controller.preview(centre_id, marking_window_id, file)
 
 
-@router.post("/upload/refresh")
+@router.post("/refresh")
 @api_response()
 def refresh_data(token: str, data: dict = Body(...)):
     """Validate user inputted data and returns any error flags"""
     return upload_controller.check(data)
 
 
-@router.post("/upload/file_upload")
+@router.post("/file_upload")
 @api_response()
 def file_upload(token: str, data: dict, file: UploadFile):
     """Upload scanned materials to files.com"""
     print("")
 
 
-@router.post("/upload/submit")
+@router.post("/submit")
 @api_response()
 def submit_upload(token: str, data: dict):
     """Checks all data and uploads, and if no errors commits to database"""
