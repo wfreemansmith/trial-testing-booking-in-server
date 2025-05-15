@@ -1,11 +1,7 @@
-import sys
-import os
 import pytest
 from sqlalchemy.orm import sessionmaker
 from src.setup_db_orm import setup_database, reset_database
 from src.db import get_database
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 @pytest.fixture
 def setup_teardown():
@@ -17,6 +13,6 @@ def setup_teardown():
     reset_database(engine)
     setup_database(session)
 
-    yield session
+    yield engine
 
     session.close()

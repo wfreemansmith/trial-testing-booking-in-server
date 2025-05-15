@@ -1,6 +1,6 @@
 import logging
 from rich.logging import RichHandler
-from config import DEBUG
+from src.config import DEBUG
 
 CONSOLE_LEVEL = logging.DEBUG if DEBUG else logging.INFO
 
