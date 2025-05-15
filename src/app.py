@@ -9,6 +9,9 @@ def create_app() -> FastAPI:
     # add middleware
     
     # add routes
+    @app.get("/")
+    async def hello():
+        return {"message": "hello"}
     app.include_router(upload_router, prefix="/upload")
 
     # add handlers
