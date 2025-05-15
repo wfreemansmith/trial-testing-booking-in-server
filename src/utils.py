@@ -5,7 +5,11 @@ def format_version_id(paper: str, component: str, version: str) -> str:
         return f"L{version}"
     else:
         return f"{paper}{component[0]}{version}".upper()
-    
+
+def construct_upload_path(window: str, partner: str, centre_number: str) -> str:
+    """Returns full upload destination as required by Files.com"""
+    from config import FILE_UPLOAD_BASE_URL
+    return f"{FILE_UPLOAD_BASE_URL}/{window}/{partner}/{centre_number}/"
 
 ## Other potentially useful functions
 # Getting the CCF code from a candidate reponses (e.g i=A, ii=B, etc)

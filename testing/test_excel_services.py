@@ -1,7 +1,9 @@
-from src.services.excel_register_processing import process_register_file
+from src.controllers.upload_controller import process_register_file
 from db.test_data.uploads import expected_xlsx_res_1
 import pytest
 import json
+
+## Refactor so these tests are testing the individual functions
 
 TEST_REGISTER_LOCATION = "./assets/test_registers/"
 PROCESS_REGISTER_FILE_TEST_DATA = [

@@ -38,7 +38,7 @@ class UploadDAO():
     
     def create_upload_object(self, data: Dict) -> Upload:
         """Recevies a dict and returns a Upload object nested with Candidate, Batch and File Upload objects"""
-        version_batches = {}
+        version_id_reference = {}
 
         # format upload
         data['part_delivery'] = self.get_next_part_delivery(
@@ -54,7 +54,7 @@ class UploadDAO():
             file_upload_data = batch_data.pop('file_uploads')
             file_uploads = [FileUpload(**file_upload) for file_upload in file_upload_data]
             batch = Batch(**batch_data, file_uploads=file_uploads)
-            version_batches[batch.version_id] = batch.batch_id
+            version_id_reference[batch.version_id] = batch.batch_id
             batches.append(batch)
 
         # format candidates
@@ -66,7 +66,7 @@ class UploadDAO():
                     paper=candidate_data.get("paper_sat"),
                     component=component,
                     version=candidate_data.pop(f'{component}_version'))
-                candidate_data[f'{component}_batch_id'] = version_batches.get(version_id, None)
+                candidate_data[f'{component}_batch_id'] = version_id_reference.get(version_id, None)
             candidate = Candidate(**candidate_data)
             candidates.append(candidate)
 
