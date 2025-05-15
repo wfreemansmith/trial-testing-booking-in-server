@@ -1,11 +1,11 @@
-from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, validates
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, validates, declarative_base
 
 Base = declarative_base()
 
 class CandidateFeedback(Base):
+    """Reference table for pre-written feedback offered to candidates upon return of their results. Feedback is organised by bandscore and by component"""
     __tablename__ = "candidate_feedback"
 
     # provided fields
@@ -16,6 +16,8 @@ class CandidateFeedback(Base):
 
 
 class ExaminerPaymentRate(Base):
+    """Examiner payments rates differ depending on their location, currency, and what component / item they've completed. Pay is per item (e.g. per report, per script)
+    Rate IDs and other details need to match those found on our Rates Management System."""
     __tablename__ = "examiner_payment_rates"
 
     # provided fields
@@ -30,21 +32,26 @@ class ExaminerPaymentRate(Base):
 
 
 class MarkingWindow(Base):
+    """A marking window is a period of time during which partipating centres can conduct trial tests.
+    Also referred to as 'Sessions', however changed for the database to distinguish from SQLalchemy Sessions."""
     __tablename__ = "marking_windows"
 
     # generated fields
-    session_id = Column(Integer, primary_key=True, autoincrement=True)
+    window_id = Column(Integer, primary_key=True, autoincrement=True)
     # provided fields
-    session_name = Column(String(50), nullable=False)
-    session_start = Column(Date, nullable=False)
-    session_end = Column(Date, nullable=False)
-    session_upload_destination = Column(String)
+    window_name = Column(String(50), nullable=False)
+    window_start = Column(Date, nullable=False)
+    window_end = Column(Date, nullable=False)
+    window_upload_destination = Column(String)
 
     # marking_window
     uploads = relationship("Upload", back_populates="marking_window")
+    requests = relationship("CentreRequests", back_populates="marking_window", cascade="all, delete-orphan")
 
 
 class LanguageFamily(Base):
+    """Reference table for language families, by country or by language.
+    Language family is an important concept in Trial Testing, as we will use this data to assess whether a version has been broadly tested enough."""
     __tablename__ = "language_families"
     
     # generated fields
@@ -58,6 +65,7 @@ class LanguageFamily(Base):
 
 
 class Country(Base):
+    """Representing countries that Centres are based in. Each country belongs to a LanguageFamily."""
     __tablename__ = "countries"
     
     # provided fields
@@ -71,6 +79,7 @@ class Country(Base):
 
 
 class Language(Base):
+    """Representing the first language reported by Candidates. Languages belong to LanguageFamilies."""
     __tablename__ = "languages"
 
     # provided fields
@@ -83,6 +92,7 @@ class Language(Base):
 
 
 class Centre(Base):
+    """Main table for registered Trial Test Centres"""
     __tablename__ = "centres"
 
     # provided fields
@@ -101,11 +111,13 @@ class Centre(Base):
 
     # relationships
     country = relationship("Country", back_populates="centres")
-    contacts = relationship("CentreContact", back_populates="centre")
+    contacts = relationship("CentreContact", back_populates="centre", cascade="all, delete-orphan")
     uploads = relationship("Upload", back_populates="centre")
+    requests = relationship("CentreRequests", back_populates="centre", cascade="all, delete-orphan")
 
 
 class CentreContact(Base):
+    """Each entry represents one contact at a Trial Testing Centre. Each centre can have many contacts."""
     __tablename__ = "centre_contacts"
 
     # generated fields
@@ -120,7 +132,27 @@ class CentreContact(Base):
     centre = relationship("Centre", back_populates="contacts")
 
 
+class CentreRequests(Base):
+    """Contains all centre requests by marking window. Used to create upload folders, share links, etc."""
+    __tablename__ = "centre_requests"
+
+    # generated fields
+    request_id = Column(Integer, primary_key=True, autoincrement=True)
+    # provided fields
+    window_id = Column(Integer, ForeignKey("marking_windows.window_id"))
+    centre_id = Column(String(4), ForeignKey("centres.centre_id"), nullable=False)
+    acw_requests = Column(Integer)
+    acr_requests = Column(Integer)
+    gtw_requests = Column(Integer)
+    gtr_requests = Column(Integer)
+
+    # relationships
+    marking_window = relationship("MarkingWindow", back_populates="requests")
+    centre = relationship("Centre", back_populates="requests")
+
+
 class ExaminerRole(Base):
+    """Reference table for different types of examiner, e.g. TTE, APE, PE"""
     __tablename__ = "examiner_roles"
 
     # generated fields
@@ -133,6 +165,7 @@ class ExaminerRole(Base):
 
 
 class Examiner(Base):
+    """Table containing all examiners details, including their personal details, country, as_id and role"""
     __tablename__ = "examiners"
 
     # generated fields
@@ -151,7 +184,7 @@ class Examiner(Base):
     # relationships
     examiner_role = relationship("ExaminerRole", back_populates="examiners")
     availability = relationship("ExaminerAvailability", back_populates="examiner")
-    marking_candidates = relationship("Candidate", back_populates="examiner")
+    batches = relationship("Batch", back_populates="examiner")
     reports = relationship("VersionReport", back_populates="examiner")
 
     # validation
@@ -163,7 +196,8 @@ class Examiner(Base):
 
 
 class ExaminerAvailability(Base):
-    __tablename__ = "examiner_availabilty"
+    """For examiners to provide their weekly availability. Not linked to marking windows, just week beginning dates. Used to determine who is available to mark a batch."""
+    __tablename__ = "examiner_availability"
 
     # generated fields
     week_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -179,6 +213,7 @@ class ExaminerAvailability(Base):
     
 
 class Component(Base):
+    """Reference table for Academic and General Training components"""
     __tablename__ = "components"
 
     # provided fields
@@ -187,9 +222,11 @@ class Component(Base):
 
     # relationships
     versions = relationship("Version", back_populates="component")
+    batches = relationship("Batch", back_populates="component")
 
 
 class Version(Base):
+    """Contains all Trial Testing Exam Versions"""
     __tablename__ = "versions"
 
     # generated fields
@@ -205,18 +242,16 @@ class Version(Base):
     candidates = relationship("Candidate", back_populates="version")
     reports = relationship("VersionReport", back_populates="version")
     cwas = relationship("CommonWrongAnswer", back_populates="version")
-    candidates = relationship(
-        "Candidate",
-        primaryjoin="""or_(
-            Candidate.writing_version_id == Version.version_id,
-            Candidate.reading_version_id == Version.version_id,
-            Candidate.listening_version_id == Version.version_id
-        )""",
-        viewonly=True
-        )
+    batches = relationship("Batch", back_populates="version")
     responses = relationship("CandidateResponse", back_populates="version")
     
     # validation
+    # @validates("paper")
+    # def validate_paper(self, key, value):
+    #     if value not in ("", "AC", "GT"):
+    #         raise ValueError(f"Invalid paper value: {value}")
+    #     return value
+
     @validates('paper', 'component_id', 'version_name')
     def generate_id(self, key, value):
         setattr(self, key, value)
@@ -225,6 +260,7 @@ class Version(Base):
 
 
 class VersionReport(Base):
+    """Table for managing writing reports, completed by examiners following a version pass"""
     __tablename__ = "version_reports"
 
      # provided fields
@@ -241,6 +277,7 @@ class VersionReport(Base):
 
 
 class AnswerKey(Base):
+    """Answer keys for Reading & Listening versions. Can compare CandidateResponses to answers in this table for auto-marking."""
     __tablename__ = "answer_keys"
 
     # generated fields
@@ -277,6 +314,7 @@ class AnswerKey(Base):
 
 
 class CommonWrongAnswer(Base):
+    """Table for automatically logging incorrect CandidateResponses to productive questions"""
     __tablename__ = "common_wrong_answers"
 
     # generated fields
@@ -292,6 +330,7 @@ class CommonWrongAnswer(Base):
 
 
 class Upload(Base):
+    """Main table for this app. Each Upload represents a register uploaded by a centre, containing Batches and Candidates."""
     __tablename__ = 'uploads'
 
     # generated fields
@@ -309,8 +348,8 @@ class Upload(Base):
     # relationships
     marking_window = relationship("MarkingWindow", back_populates="uploads")
     centre = relationship("Centre", back_populates="uploads")
-    candidates = relationship("Candidate", back_populates='batch')
-    file_uploads = relationship('FileUpload', back_populates='batch')
+    batches = relationship("Batch", back_populates='upload', cascade="all, delete-orphan")
+    candidates = relationship("Candidate", back_populates='upload', cascade="all, delete-orphan")
 
     # validation
     @validates('session_id', 'centre_id', 'part_delivery')
@@ -321,21 +360,58 @@ class Upload(Base):
         return value
     
 
+class Batch(Base):
+    """Helper table to link Upload, Candidates and FileUploads.
+    One entry created per centre, per upload, per version*.
+    Batches are assigned to examiners and markers.
+    *Exception would be if Writing batch is over 50, then split it into a smaller batch."""
+    __tablename__ = 'batches'
+
+    # generated fields
+    batch_id = Column(String, primary_key=True)
+    # provided fields
+    upload_id = Column(String, ForeignKey("uploads.upload_id"))
+    version_id = Column(String, ForeignKey("versions.version_id"))
+    component_id = Column(String, ForeignKey("components.component_id"))
+    examiner_id = Column(Integer, ForeignKey('examiners.examiner_id')) # Writing Only
+
+    # relationships
+    upload = relationship("Upload", back_populates="batches")
+    version = relationship("Version", back_populates="batches")
+    component = relationship("Component", back_populates="batches")
+    examiner = relationship('Examiner', back_populates='batches')
+    writing_candidates = relationship("Candidate", back_populates="writing_batch", foreign_keys="Candidate.writing_batch_id", passive_deletes=True)
+    reading_candidates = relationship("Candidate", back_populates="reading_batch", foreign_keys="Candidate.reading_batch_id", passive_deletes=True)
+    listening_candidates = relationship("Candidate", back_populates="listening_batch", foreign_keys="Candidate.listening_batch_id", passive_deletes=True)  
+    file_uploads = relationship("FileUpload", back_populates='batch')
+
+    # validation
+    @validates('upload_id', 'version_id')
+    def generate_id(self, key, value):
+        setattr(self, key, value)
+        if self.upload_id and self.version_id:
+            self.batch_id = f"{self.upload_id}-{str(self.version_id)}"
+        return value
+    
+
 class Candidate(Base):
+    """Each entry represents one candidate. Candidate can belong to one Upload, and to one Batch for each component."""
     __tablename__ = 'candidates'
+    # __table_args__ = (
+    #     UniqueConstraint('upload_id', 'candidate_number', name='uq_candidate_upload_number')
+    #     )
 
     # generated fields
     candidate_id = Column(String, primary_key=True)
-    # provided fields
+    # inherited fields
     upload_id = Column(String, ForeignKey('uploads.upload_id'), nullable=False)
+    # provided fields
     candidate_number = Column(Integer, nullable=False)
     candidate_name = Column(String, nullable=False)
-    paper_sat = Column(String(2), default="") ## NB - make paper a table? Put validation around it
-    language_id = Column(Integer, ForeignKey('languages.language_id'))
-    writing_version_id = Column(String, ForeignKey('versions.version_id'))
-    reading_version_id = Column(String, ForeignKey('versions.version_id'))
-    listening_version_id = Column(String, ForeignKey('versions.version_id'))
-    examiner_id = Column(Integer, ForeignKey('examiners.examiner_id'))
+    paper_sat = Column(String(2))
+    writing_batch_id = Column(String, ForeignKey('batches.batch_id', ondelete="SET NULL"))
+    reading_batch_id = Column(String, ForeignKey('batches.batch_id', ondelete="SET NULL"))
+    listening_batch_id = Column(String, ForeignKey('batches.batch_id', ondelete="SET NULL"))
     writing_t1_ta = Column(Integer)
     writing_t1_cc = Column(Integer)
     writing_t1_lr = Column(Integer)
@@ -344,30 +420,42 @@ class Candidate(Base):
     writing_t2_cc = Column(Integer)
     writing_t2_lr = Column(Integer)
     writing_t2_gra = Column(Integer)
+    writing_underlength = Column(Boolean)
+    writing_off_topic = Column(Boolean)
+    
+    # CHECK CCF DATA FOR WHAT DATA WE NEED TO HAVE IN DATA STRINGS
+    language_id = Column(Integer, ForeignKey('languages.language_id'))
 
     # relationships
-    batch = relationship('Upload', back_populates='candidates')
-    examiner = relationship('Examiner', back_populates='marking_candidates')
-    writing_version = relationship("Version", foreign_keys=[writing_version_id])
-    reading_version = relationship("Version", foreign_keys=[reading_version_id])
-    listening_version = relationship("Version", foreign_keys=[listening_version_id])
+    upload = relationship('Upload', back_populates='candidates')
+    language = relationship("Language", back_populates="candidates")
+    writing_batch = relationship("Batch", foreign_keys=[writing_batch_id], back_populates="writing_candidates")
+    reading_batch = relationship("Batch", foreign_keys=[reading_batch_id], back_populates="reading_candidates")
+    listening_batch = relationship("Batch", foreign_keys=[listening_batch_id], back_populates="listening_candidates")
     responses = relationship('CandidateResponse', back_populates='candidate')
 
     # validation
+    @validates("paper_sat")
+    def validate_paper(self, key, value):
+        if value not in ("AC", "GT"):
+            raise ValueError(f"Invalid paper value: {value}")
+        return value
+    
     @validates('upload_id', 'candidate_number')
     def generate_id(self, key, value):
         setattr(self, key, value)
         if self.upload_id and self.candidate_number:
-            self.candidate_id_id = f"{self.upload_id}-{str(self.candidate_number).zfill(4)}"
+            self.candidate_id = f"{self.upload_id}-{str(self.candidate_number).zfill(4)}"
         return value
 
 
 class CandidateResponse(Base):
+    """Each entry represents a candidates' response to one Reading & Listening question. Can be compared to AnswerKey table for automarking."""
     __tablename__ = 'candidate_responses'
 
     # generated fields
     response_id = Column(Integer, primary_key=True, autoincrement=True)
-    answer_id = Column(String, ForeignKey('answer_keys.answer_id'))
+    answer_id = Column(String, ForeignKey('answer_keys.answer_id'), nullable=True)
     # provided fields
     candidate_id = Column(String, ForeignKey('candidates.candidate_id'))
     version_id = Column(String, ForeignKey('versions.version_id'), nullable=False)
@@ -389,19 +477,19 @@ class CandidateResponse(Base):
 
 
 class FileUpload(Base):
+    """Each entry represents one file, uploaded to FTP server. Files are linked to specific Batches, specific versions, and part of a specific Upload"""
     __tablename__ = 'file_uploads'
 
     # generated fields
     file_upload_id = Column(Integer, primary_key=True, autoincrement=True)
+    # inherited fields
+    batch_id = Column(String, ForeignKey('batches.batch_id'), nullable=False)
     # provided fields
-    upload_id = Column(String, ForeignKey('uploads.upload_id'), nullable=False)
-    version_id = Column(String, ForeignKey('versions.version_id'), nullable=False)
     file_name = Column(String, nullable=False)
     is_rescan = Column(Boolean, default=False)
 
     # relationships
-    batch = relationship('Upload', back_populates='file_uploads')
-    version = relationship('Version', foreign_keys=[version_id])
+    batch = relationship('Batch', back_populates='file_uploads')
 
 
 def get_model_by_tablename(tablename: str):

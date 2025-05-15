@@ -1,5 +1,9 @@
 from typing import List
-from logger import logger
+from src.logger import logger
+
+from src.dao.candidate_dao import CandidateDAO
+from src.dao.upload_dao import UploadDAO
+from src.dao.version_dao import VersionDAO
 
 ## NB probably replace this all with SQLalchemy eventually
 

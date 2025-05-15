@@ -8,6 +8,7 @@ env_file = f".env.{ENV}"
 
 load_dotenv(env_file)
 
+# Database
 SQL_DB = os.getenv("SQL_DB")
 DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
@@ -19,6 +20,10 @@ LEGACY_DB_NAME = os.getenv("LEGACY_DB_NAME")
 USERDOMAIN = os.getenv("USERDOMAIN")
 USERNAME = os.getenv("USERNAME")
 ## also include DRIVER for SQL Server
+
+# Files.com
+FILE_UPLOAD_API_KEY = os.getenv("FILE_UPLOAD_API_KEY")
+FILE_UPLOAD_BASE_URL = os.getenv("FILE_UPLOAD_BASE_URL")
 
 # debug mode
 parser = argparse.ArgumentParser()
