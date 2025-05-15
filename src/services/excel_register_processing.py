@@ -183,7 +183,7 @@ def ingest_excel_file(file: BinaryIO) -> Tuple[
     return candidates_list, batches_list
     
 
-def check_lists(centre_num: str, marking_window_id: int, candidates_list: List[CandidateDict], batches_list: List[BatchDict]) -> Tuple[
+def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[CandidateDict], batches_list: List[BatchDict]) -> Tuple[
     List[CandidateDict],
     List[BatchDict],
     List[ErrorMessage]
@@ -201,7 +201,7 @@ def check_lists(centre_num: str, marking_window_id: int, candidates_list: List[C
 
     # check candidate numbers against database
     for position, candidate in enumerate(candidates_list):
-        candidate_errors = validate_candidate(marking_window_id, centre_num, candidate, position)
+        candidate_errors = validate_candidate(marking_window_id, centre_id, candidate, position)
         for version_id_col in VERSION_ID_COLS:
             if candidate[version_id_col] in versions_not_found:
                 error = error_message(version_id_col, "This version could not be found on the database, please double check")

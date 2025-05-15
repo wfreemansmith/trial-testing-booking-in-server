@@ -1,0 +1,1 @@
+from src.errors.handlers import http_exception_handler

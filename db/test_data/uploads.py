@@ -2,7 +2,7 @@
 expected_xlsx_res_1 = [
     {
         "filename": "test_register_1",
-        "centre_num": "3243",
+        "centre_id": "3243",
         "batches": [
             {
                 "version_id": "ACRAP123",
@@ -67,7 +67,7 @@ expected_xlsx_res_1 = [
     },
     {
         "filename": "test_register_2",
-        "centre_num": "3243",
+        "centre_id": "3243",
         "batches": [
             {
                 "version_id": "ACRAP123",
