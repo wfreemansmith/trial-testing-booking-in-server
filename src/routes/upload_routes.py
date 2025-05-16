@@ -15,7 +15,7 @@ def get_context(token: str):
 
 @router.post("/preview")
 @api_response()
-def preview_upload(
+async def preview_upload(
     token: str = Form(...),
     data: str = Form(...),
     file: UploadFile = File(...)
@@ -24,7 +24,8 @@ def preview_upload(
     data_dict = json.loads(data)
     centre_id = data_dict.get('centre_id')
     marking_window_id = data_dict.get('marking_window_id')
-    return upload_controller.preview(centre_id, marking_window_id, file)
+    file_bytes = await file.read()
+    return upload_controller.preview(centre_id, marking_window_id, file_bytes)
 
 
 @router.post("/refresh")
