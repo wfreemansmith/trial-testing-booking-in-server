@@ -5,7 +5,7 @@ import json
 
 ## Refactor so these tests are testing the individual functions
 
-TEST_REGISTER_LOCATION = "./assets/test_registers/"
+TEST_REGISTER_LOCATION = "./testing/test_documents/"
 PROCESS_REGISTER_FILE_TEST_DATA = [
     (entry.get('filename'),
      entry.get('centre_id'),
