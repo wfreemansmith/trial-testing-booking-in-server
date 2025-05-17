@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, Form, File, Body
+from fastapi import APIRouter, UploadFile, Form, File, Body, HTTPException, status
 from src.controllers import upload_controller
 from src.utils.response import api_response
 import json
@@ -21,10 +21,22 @@ async def preview_upload(
     file: UploadFile = File(...)
     ):
     """Process register and return data contained within"""
+
     data_dict = json.loads(data)
-    centre_id = data_dict.get('centre_id')
-    marking_window_id = data_dict.get('marking_window_id')
-    file_bytes = await file.read()
+    centre_id = data_dict.get('centre_id', None)
+    marking_window_id = data_dict.get('marking_window_id', None)
+
+    # if not centre_id or not marking_window_id:
+    #     raise HTTPException.
+
+    if file.filename.endswith('.xlsx'):
+        file_bytes = await file.read()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"File type .{file.filename.split(".")[-1]} not supported"
+        )
+
     return upload_controller.preview(centre_id, marking_window_id, file_bytes)
 
 
