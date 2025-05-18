@@ -26,7 +26,7 @@ class TestUploadPreview:
             ids=PREVIEW_TEST_IDS)
     async def test_preview_POST_200(self, async_client, filename, centre_id, expected_candidates, expected_batches, expected_errors):
         """
-        upload/preview POST 200:
+        POST upload/preview 200:
         Tests happy endpoints, successful upload of Excel sheet. Includes both with no errors and with expected errors
         """
         ## ARRANGE
@@ -76,7 +76,7 @@ class TestUploadPreview:
             )
     async def test_preview_POST_415(self, async_client, filename, ext, mime_type):
         """
-        upload/preview POST 415:
+        POST upload/preview 415:
         tests upload of unsupported file types
         """
 
@@ -111,6 +111,43 @@ class TestUploadPreview:
             f"Expected message '{expected_message}', received '{content['message']}'"
         )
 
+    # POST missing or invalid data e.g. centre_id, marking_window
+    @pytest.mark.parametrize(
+        "filename, centre_id, marking_window_id",
+        [
+            ("test_register_1", None, 1),
+            ("test_register_1", "3243", None)
+        ]
+    )
+    async def test_previous_POST_400(self, async_client, filename, centre_id, marking_window_id):
+        """
+        POST upload/preview 400
+        Tests submissions of missing data
+        """
+
+        ## ARRANGE
+        filename = f"{filename}.xlsx"
+        filepath = os.path.join(TEST_REGISTER_LOCATION, filename)
+        formdata = {
+            "token": "dummy-token",
+            "data": json.dumps(
+                {
+                    k: v for k, v in {
+                        "centre_id": centre_id,
+                        "marking_window_id": marking_window_id
+                    }.items() if v
+                    }
+                )
+            }
+        files = {"file": (filename, open(filepath, "rb"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+
+        ## ACT
+        response = await async_client.post("/upload/preview", data=formdata, files=files)
+
+        ## ASSERT
+        assert response.status_code == 400, (
+            f"Expected 400 status code, received {response.status_code}"
+        )
+
 
     # POST incorrectly formatted Excel sheet (wrong columns)
-    # POST missing data e.g. centre_id, marking_window

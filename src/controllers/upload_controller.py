@@ -1,4 +1,4 @@
-from src.services import ingest_excel_file, check_lists
+from src.services.excel_register_processing import ingest_excel_file, check_lists, parse_lists
 from typing import List, BinaryIO, Dict
 from src.db import get_database
 from src.dao import UploadDAO
@@ -7,11 +7,11 @@ from src.dao import UploadDAO
 
 def preview(centre_id: str, marking_window_id: int, file: BinaryIO) -> Dict[str, List[dict]]:
     """First pass process, processes Excel file returns JSON"""
-    # convert to list of dicts
-    candidates_list, batches_list = ingest_excel_file(file)
+    # read Excelconvert to list of pydantic models
+    parsed_candidates, parsed_batches = ingest_excel_file(file)
     
-    # checks list of dicts and returns
-    checked_candidates_list, checked_batches_list, error_list = check_lists(centre_id, marking_window_id, candidates_list, batches_list)
+    # applies checks list and returns as list of dicts
+    checked_candidates_list, checked_batches_list, error_list = check_lists(centre_id, marking_window_id, parsed_candidates, parsed_batches)
     
     # returns dict
     return {
@@ -28,7 +28,8 @@ def check(data: dict) -> Dict[str, List[dict]]:
     candidates_list = data.get("candidates", [])
     batches_list = data.get("batches", [])
 
-    checked_candidates_list, checked_batches_list, error_list = check_lists(centre_id, marking_window_id, candidates_list, batches_list)
+    parsed_candidates, parsed_batches = parse_lists(candidates_list, batches_list)
+    checked_candidates_list, checked_batches_list, error_list = check_lists(centre_id, marking_window_id, parsed_candidates, parsed_batches)
     
     return {
         "candidates": checked_candidates_list,
