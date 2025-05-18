@@ -1,6 +1,8 @@
 from fastapi import APIRouter, UploadFile, Form, File, Body, HTTPException, status
+from pydantic import ValidationError
 from src.controllers import upload_controller
-from src.utils.response import api_response
+from src.utils import api_response
+from src.schemas.upload_schema import parse_preview_data
 import json
 
 router = APIRouter()
@@ -21,13 +23,14 @@ async def preview_upload(
     file: UploadFile = File(...)
     ):
     """Process register and return data contained within"""
-
-    data_dict = json.loads(data)
-    centre_id = data_dict.get('centre_id', None)
-    marking_window_id = data_dict.get('marking_window_id', None)
-
-    # if not centre_id or not marking_window_id:
-    #     raise HTTPException.
+    try:
+        parsed_data = parse_preview_data(json.loads(data))
+    except ValidationError as e:
+        ## maybe pass Validation Errors to a specific handler?
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=e.errors()
+        )
 
     if file.filename.endswith('.xlsx'):
         file_bytes = await file.read()
@@ -37,7 +40,7 @@ async def preview_upload(
             detail=f"File type .{file.filename.split(".")[-1]} not supported"
         )
 
-    return upload_controller.preview(centre_id, marking_window_id, file_bytes)
+    return upload_controller.preview(parsed_data.centre_id, parsed_data.marking_window_id, file_bytes)
 
 
 @router.post("/refresh")

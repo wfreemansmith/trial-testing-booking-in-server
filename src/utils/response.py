@@ -20,15 +20,7 @@ def api_response(success_message = "Request successful"):
                         "message": success_message
                     }
                 )
-            except HTTPException as e:
-                raise e
             except Exception as e:
-                return JSONResponse(
-                    status_code=500,
-                    content={
-                        "status": "error",
-                        "message": str(e),
-                        "code": 500
-                })
+                raise e
         return wrapper
     return decorator

@@ -1,1 +1,1 @@
-from src.errors.handlers import http_exception_handler
+from src.errors.handlers import http_exception_handler, server_error_handler

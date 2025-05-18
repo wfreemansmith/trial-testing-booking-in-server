@@ -43,6 +43,10 @@ def get_candidate_range(candidate_nums: List[int]) -> str | None:
         return f"{zstring(candidate_nums[0])}"
     else:
         return None
+    
+def serialise_pydantic_list(list: list) -> list:
+    """Turns a list of pydantic models back into list of dicts"""
+    return [item.model_dump() for item in list]
 
 ## Other potentially useful functions
 # Getting the CCF code from a candidate reponses (e.g i=A, ii=B, etc)

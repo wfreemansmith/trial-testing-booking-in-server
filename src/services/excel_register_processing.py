@@ -1,32 +1,35 @@
 from src.db import get_database
+from src.utils import serialise_pydantic_list
 from typing import TypedDict, BinaryIO, List, Tuple
+from src.schemas.upload_schema import CandidateDict, ErrorMessage, BatchDict
 from io import BytesIO
 from src.dao import CandidateDAO, VersionDAO
 import pandas as pd
+import numpy as np
 from pandas import DataFrame
 
 
 # type hints
-class CandidateDict(TypedDict):
-    candidate_number: int
-    candidate_name: str
-    paper_sat: str
-    writing_version: str
-    reading_version: str
-    listening_version: str
-    writing_version_id: str
-    reading_version_id: str
-    listening_version_id: str
-    errors: list
+# class CandidateDict(TypedDict):
+#     candidate_number: int
+#     candidate_name: str
+#     paper_sat: str
+#     writing_version: str
+#     reading_version: str
+#     listening_version: str
+#     writing_version_id: str
+#     reading_version_id: str
+#     listening_version_id: str
+#     errors: list
 
-class BatchDict(TypedDict):
-    version_id: str
-    component_id: str
-    errors: list
+# class BatchDict(TypedDict):
+#     version_id: str
+#     component_id: str
+#     errors: list
 
-class ErrorMessage(TypedDict):
-    field: str
-    message: str
+# class ErrorMessage(TypedDict):
+#     field: str
+#     message: str
 
 
 # create database connection
@@ -40,37 +43,37 @@ VERSION_ID_COLS = ['reading_version_id', 'writing_version_id', 'listening_versio
 
 
 # validation functions
-def error_message(field: str, message: str | None = None) -> ErrorMessage:
-    """Returns an error to relevant array in dataframe, indicating which row and field is problematic"""
-    return {
-        "field": field,
-        "message": message
-    }
+# def error_message(field: str, message: str | None = None) -> ErrorMessage:
+#     """Returns an error to relevant array in dataframe, indicating which row and field is problematic"""
+#     return {
+#         "field": field,
+#         "message": message
+#     }
 
 
 def validate_candidate(marking_window_id: int, centre_num: str, candidate: CandidateDict, position: int) -> List[ErrorMessage]:
     """Checks candidate dict against database, adjusts anything which can be adjusted, returns error messages if any error"""
     candidate_errors = []
-    candidate_name = candidate.get("candidate_name")
-    candidate_number = candidate.get("candidate_number")
 
     # check for blanks etc
-    if not candidate_name or not len(candidate_name):
-        error = error_message("candidate_name", "Candidate name cannot be blank. Please provide a name for the candidate.")
-        candidate_errors.append(error)
+    if not candidate.candidate_name:
+        candidate.errors.append(
+            ErrorMessage(field="candidate_name", message="Candidate name cannot be blank. Please provide a name for the candidate.")
+        )
     
-    if not candidate_number:
-        error = error_message("candidate_number", "Candidate number cannot be blank or zero. Please provide a candidate number that you have not used previously.")
-        candidate_errors.append(error)
+    if not candidate.candidate_number:
+        candidate.errors.append(
+            ErrorMessage(field="candidate_number", message="Candidate number cannot be blank or zero. Please provide a candidate number that you have not used previously.")
+        )
 
     # check database here
-    duplicate = candidate_dao.is_duplicate_candidate(marking_window_id, centre_num, candidate_name, candidate_number)
+    duplicate = candidate_dao.is_duplicate_candidate(marking_window_id, centre_num, candidate.candidate_name, candidate.candidate_number)
     if duplicate and type(duplicate) is int:
         candidate['candidate_number'] = duplicate + position
-        error = error_message("candidate_number", "Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes.")
+        error = ErrorMessage(field="candidate_number", message="Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes.")
         candidate_errors.append(error)
     elif duplicate:
-        error = error_message("duplicate")
+        error = ErrorMessage(field="duplicate")
         candidate_errors.append(error)
 
     return candidate_errors
@@ -81,7 +84,7 @@ def validate_version(version_id: str) -> List[ErrorMessage]:
     version_errors = []
     version_exists = version_dao.version_exists(version_id)
     if not version_exists:
-        error = error_message("version_id", f"Version cannot be found on the database. Please check the version, update your candidates, and try again. If you believe this is an error, please contact Cambridge.")
+        error = ErrorMessage(field="version_id", message=f"Version cannot be found on the database. Please check the version, update your candidates, and try again. If you believe this is an error, please contact Cambridge.")
         version_errors.append(error)
 
     return version_errors
@@ -115,6 +118,10 @@ def strip_strings(df: DataFrame) -> DataFrame:
     df[string_columns] = df[string_columns].apply(lambda x: x.str.strip())
     return df
 
+def replace_nans(df: DataFrame) -> DataFrame:
+    df = df.replace({np.nan: None})
+    return df
+
 def replace_absent_candidates(df: DataFrame) -> DataFrame:
     version_columns = df.columns[3:]
     ABSENT_KEYWORDS = ["ABSENT", "ABS", "-", ""]
@@ -140,7 +147,7 @@ def ingest_excel_file(file: BinaryIO) -> Tuple[
     List[CandidateDict],
     List[BatchDict]
     ]:
-    """Processes Excel file and returns a list of candidate dicts and a list of batch dicts"""
+    """Processes Excel file and returns two lists of validated pydantic candidates and batches"""
     # Suppress specific openpyxl UserWarnings
     import warnings
     warnings.filterwarnings("ignore", category=UserWarning, message="Data Validation extension is not supported and will be removed")
@@ -153,83 +160,104 @@ def ingest_excel_file(file: BinaryIO) -> Tuple[
         .pipe(strip_strings)
         .pipe(replace_absent_candidates)
         .pipe(construct_version_ids)
+        .pipe(replace_nans)
     )
 
     # construct list of candidate and batch dicts
     candidates_df = df.copy()
     candidates_df['errors'] = [[] for _ in range(len(candidates_df))]
     candidates_list = candidates_df.to_dict(orient="records")
+    parsed_candidates = [CandidateDict.model_validate(row) for row in candidates_list]
     
     seen_versions = set()
-    batches_list = []
+    parsed_batches = []
 
     for _, row in df.iterrows():
         for version_id_col in VERSION_ID_COLS:
             version_id = row[version_id_col]
 
             if version_id not in seen_versions and pd.notna(version_id):
-                batches_list.append(
-                    {
-                        "version_id": version_id,
-                        "component_id": version_id_col[0].upper(),
-                        "errors": []
-                    }
+                parsed_batches.append(
+                    BatchDict(
+                        version_id=version_id,
+                        component_id=version_id_col[0].upper()
+                    )
                 )
                 seen_versions.add(version_id)
 
     # sorts batch_list
-    batches_list.sort(key=lambda x: x['version_id'])
+    parsed_batches.sort(key=lambda batch: batch.version_id)
 
-    return candidates_list, batches_list
-    
+    return parsed_candidates, parsed_batches
+
+
+def parse_lists(candidates_list: List[dict], batches_list: List[dict]) -> Tuple[
+        List[CandidateDict],
+        List[BatchDict]
+]:
+    """Converts a list of candidate and batch dicts into validated pydantic lists"""
+    parsed_candidates = [CandidateDict.model_validate(row) for row in candidates_list]
+    parsed_batches = [BatchDict.model_validate(row) for row in batches_list]
+    return parsed_candidates, parsed_batches
+  
 
 def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[CandidateDict], batches_list: List[BatchDict]) -> Tuple[
-    List[CandidateDict],
-    List[BatchDict],
-    List[ErrorMessage]
+    List[dict],
+    List[dict],
+    List[dict]
 ]:
-    """Checks list against database, attaches error messages, remove certain elements"""
+    """
+    Accepts a list of pydantic candidates and batches, returns a list of cleanded dicts.
+    Checks lists against database, attaches any relevant error messages, remove duplicates and unnecesarry fields
+    """
     versions_not_found = set()
     errors_list = []
     # check version_id against database
     for batch in batches_list:
-        version_id = batch.get('version_id', None)
-        version_errors = validate_version(version_id)
+        version_errors = validate_version(batch.version_id)
         if version_errors:
-            versions_not_found.add(version_id)
+            versions_not_found.add(batch.version_id)
             errors_list.extend(version_errors)
 
     # check candidate numbers against database
     for position, candidate in enumerate(candidates_list):
-        candidate_errors = validate_candidate(marking_window_id, centre_id, candidate, position)
+        validate_candidate(marking_window_id, centre_id, candidate, position)
         for version_id_col in VERSION_ID_COLS:
-            if candidate[version_id_col] in versions_not_found:
-                error = error_message(version_id_col, "This version could not be found on the database, please double check")
-                candidate_errors.append(error)
-            candidate.pop(version_id_col)
-        candidate['errors'] = candidate_errors
+            if getattr(candidate, version_id_col) in versions_not_found:
+                candidate.errors.append(
+                    ErrorMessage(field=version_id_col, message="This version could not be found on the database, please double check")
+                )
 
     # cleans batch list of non-existent batches
-    filtered_batches_list = [batch for batch in batches_list if not batch.get('errors')]
+    filtered_batches_list = [batch for batch in batches_list if not batch.errors]
 
     # cleans candidate list of duplicates and adds to errors_list
     duplicate_count = sum(
         1
         for candidate in candidates_list
-        for error in candidate.get('errors', [])
-        if error.get('field') == "duplicate"
+        for error in candidate.errors
+        if error.field == "duplicate"
     )
 
     filtered_candidates_list = [
         candidate for candidate in candidates_list
-        if not any(error.get('field') == 'duplicate' for error in candidate.get('errors', []))
+        if not any(error.field == 'duplicate' for error in candidate.errors)
         ]
 
     if duplicate_count > 0 and filtered_candidates_list:
-        duplicate_error = error_message("candidates", f"We found {duplicate_count} duplicate candidates already on our database, so have removed these candidates")
-        errors_list.append(duplicate_error)
+        errors_list.append(
+            ErrorMessage(field="candidates", message=f"We found {duplicate_count} duplicate candidates already on our database, so have removed these candidates")
+        )
     elif not filtered_candidates_list:
-        duplicate_error = error_message("candidates", "These candidates have already been uploaded to us.")
-        errors_list.append(duplicate_error)
+        errors_list.append(
+            ErrorMessage(field="candidates", message="These candidates have already been uploaded to us.")
+        )
+
+    checked_candidate_list = serialise_pydantic_list(filtered_candidates_list)
+    for cand in checked_candidate_list:
+        for version_id in VERSION_ID_COLS:
+            cand.pop(version_id)
+    checked_batches_list = serialise_pydantic_list(filtered_batches_list)
+    checked_errors_list = serialise_pydantic_list(errors_list)
         
-    return filtered_candidates_list, filtered_batches_list, errors_list
+    return checked_candidate_list, checked_batches_list, checked_errors_list
