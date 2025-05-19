@@ -116,10 +116,20 @@ class TestUploadPreview:
         "filename, centre_id, marking_window_id",
         [
             ("test_register_1", None, 1),
-            ("test_register_1", "3243", None)
+            ("test_register_1", "3243", None),
+            ("test_register_1", "Language Centre Name", 1),
+            ("test_register_1", 3243, 1),
+            ("test_register_1", None, None)
+        ],
+        ids=[
+            "Missing centre_id",
+            "Missing marking_window_id",
+            "Centre_id string incorrect format",
+            "Centre_id is an int",
+            "Missing both centre_id and marking_window_id"
         ]
     )
-    async def test_previous_POST_400(self, async_client, filename, centre_id, marking_window_id):
+    async def test_preview_POST_400_data(self, async_client, filename, centre_id, marking_window_id):
         """
         POST upload/preview 400
         Tests submissions of missing data
@@ -143,11 +153,56 @@ class TestUploadPreview:
 
         ## ACT
         response = await async_client.post("/upload/preview", data=formdata, files=files)
+        # content = response.json()
+        # print(content['message'])
 
         ## ASSERT
         assert response.status_code == 400, (
             f"Expected 400 status code, received {response.status_code}"
         )
 
+        # maybe add some more in for error messages once I know how to format them?
 
     # POST incorrectly formatted Excel sheet (wrong columns)
+    @pytest.mark.parametrize(
+            "filename",
+            [
+                ("test_register_incorrect_col_names"),
+                ("test_register_extra_cols"),
+                ("test_register_totally_wrong")
+            ]
+    )
+    async def test_preview_POST_400_file(self, async_client, filename):
+        """
+        POST upload/preview 400:
+        Tests upload of incorrectly formatted Excel sheets
+        """
+
+        ## ARRANGE
+        filename = f"{filename}.xlsx"
+        filepath = os.path.join(TEST_REGISTER_LOCATION, filename)
+        formdata = {
+            "token": "dummy-token",
+            "data": json.dumps(
+                {
+                    "centre_id": "3243",
+                    "marking_window_id": 1
+                    }
+                )
+            }
+        files = {"file": (filename, open(filepath, "rb"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+
+        ## ACT
+        response = await async_client.post("/upload/preview", data=formdata, files=files)
+        content = response.json()
+
+        ## ASSERT
+        assert response.status_code == 400, (
+            f"Expected 400 status code, received {response.status_code}"
+        )
+
+        assert content['message'] == "There was an error processing the file you uploaded. Please check that you have used the correct template and it has not been altered.", (
+            f"Recieved error message: {content['message']}"
+        )
+
+        # Add more tests
