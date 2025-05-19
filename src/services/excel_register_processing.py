@@ -1,5 +1,6 @@
 from src.db import get_database
 from src.utils import serialise_pydantic_list
+from src.errors import FileProcessingError
 from typing import TypedDict, BinaryIO, List, Tuple
 from src.schemas.upload_schema import CandidateDict, ErrorMessage, BatchDict
 from io import BytesIO
@@ -7,29 +8,6 @@ from src.dao import CandidateDAO, VersionDAO
 import pandas as pd
 import numpy as np
 from pandas import DataFrame
-
-
-# type hints
-# class CandidateDict(TypedDict):
-#     candidate_number: int
-#     candidate_name: str
-#     paper_sat: str
-#     writing_version: str
-#     reading_version: str
-#     listening_version: str
-#     writing_version_id: str
-#     reading_version_id: str
-#     listening_version_id: str
-#     errors: list
-
-# class BatchDict(TypedDict):
-#     version_id: str
-#     component_id: str
-#     errors: list
-
-# class ErrorMessage(TypedDict):
-#     field: str
-#     message: str
 
 
 # create database connection
@@ -40,15 +18,6 @@ candidate_dao = CandidateDAO(engine)
 
 # constants
 VERSION_ID_COLS = ['reading_version_id', 'writing_version_id', 'listening_version_id']
-
-
-# validation functions
-# def error_message(field: str, message: str | None = None) -> ErrorMessage:
-#     """Returns an error to relevant array in dataframe, indicating which row and field is problematic"""
-#     return {
-#         "field": field,
-#         "message": message
-#     }
 
 
 def validate_candidate(marking_window_id: int, centre_num: str, candidate: CandidateDict, position: int) -> List[ErrorMessage]:
@@ -152,16 +121,19 @@ def ingest_excel_file(file: BinaryIO) -> Tuple[
     import warnings
     warnings.filterwarnings("ignore", category=UserWarning, message="Data Validation extension is not supported and will be removed")
 
-    df = (
-        pd.read_excel(BytesIO(file), header=4)
-        .pipe(rename_columns)
-        .pipe(drop_empty_rows)
-        .pipe(strip_prefixes)
-        .pipe(strip_strings)
-        .pipe(replace_absent_candidates)
-        .pipe(construct_version_ids)
-        .pipe(replace_nans)
-    )
+    try:
+        df = (
+            pd.read_excel(BytesIO(file), header=4)
+            .pipe(rename_columns)
+            .pipe(drop_empty_rows)
+            .pipe(strip_prefixes)
+            .pipe(strip_strings)
+            .pipe(replace_absent_candidates)
+            .pipe(construct_version_ids)
+            .pipe(replace_nans)
+        )
+    except KeyError as e:
+        raise FileProcessingError(str(e.args[0]))
 
     # construct list of candidate and batch dicts
     candidates_df = df.copy()
