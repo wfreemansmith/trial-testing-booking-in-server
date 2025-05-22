@@ -35,5 +35,5 @@ TO DO:
 [ ] Files.com services
 [ ] Refactoring postgres models into mssql models
 [ ] Flesh out upload endpoints and controllers
-[ ] Work in Pydantic models...
-[ ] Error handling
+[X] Work in Pydantic models...
+[X] Error handling
