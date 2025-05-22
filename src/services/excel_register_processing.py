@@ -38,7 +38,7 @@ def validate_candidate(marking_window_id: int, centre_num: str, candidate: Candi
     # check database here
     duplicate = candidate_dao.is_duplicate_candidate(marking_window_id, centre_num, candidate.candidate_name, candidate.candidate_number)
     if duplicate and type(duplicate) is int:
-        candidate['candidate_number'] = duplicate + position
+        candidate.candidate_number = duplicate + position
         error = ErrorMessage(field="candidate_number", message="Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes.")
         candidate_errors.append(error)
     elif duplicate:
@@ -147,6 +147,7 @@ def ingest_excel_file(file: BinaryIO) -> Tuple[
     for _, row in df.iterrows():
         for version_id_col in VERSION_ID_COLS:
             version_id = row[version_id_col]
+            print(version_id)
 
             if version_id not in seen_versions and pd.notna(version_id):
                 parsed_batches.append(
@@ -190,8 +191,8 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
         if version_errors:
             versions_not_found.add(batch.version_id)
             errors_list.extend(version_errors)
-
-    # check candidate numbers against database
+    
+    # check candidate numbers against database & for any in-list duplicates
     for position, candidate in enumerate(candidates_list):
         validate_candidate(marking_window_id, centre_id, candidate, position)
         for version_id_col in VERSION_ID_COLS:
@@ -199,6 +200,11 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
                 candidate.errors.append(
                     ErrorMessage(field=version_id_col, message="This version could not be found on the database, please double check")
                 )
+        
+        if [c.candidate_number for c in candidates_list].count(candidate.candidate_number) > 1:
+            candidate.errors.append(
+                ErrorMessage(field="candidate_number", message="Candidate number cannot be duplicated, please use a unique candidate number.")
+            )
 
     # cleans batch list of non-existent batches
     filtered_batches_list = [batch for batch in batches_list if not batch.errors]

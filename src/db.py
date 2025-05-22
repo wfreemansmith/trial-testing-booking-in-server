@@ -6,8 +6,7 @@ from sqlalchemy import create_engine
 
 def get_database():
     """Returns an SQL alchemy database engine"""
-    DB_STRING = f"{SQL_DB}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}" # postgres
-    # DB_STRING = f"sqlite:///db/test.db" # sqlite
+    DB_STRING = f"{SQL_DB}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     return create_engine(DB_STRING)
 
 

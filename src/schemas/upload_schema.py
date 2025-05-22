@@ -9,7 +9,7 @@ class ErrorMessage(BaseModel):
 class CandidateDict(BaseModel):
     candidate_number: Optional[int]
     candidate_name: Optional[str]
-    paper_sat: str
+    paper_sat: Optional[str]
     writing_version: Optional[str]
     reading_version: Optional[str]
     listening_version: Optional[str]

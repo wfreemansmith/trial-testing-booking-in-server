@@ -3,10 +3,10 @@ import sys
 import argparse
 from dotenv import load_dotenv
 
-ENV = os.getenv("APP_ENV", "development")
-env_file = f".env.{ENV}"
+# ENV = os.getenv("APP_ENV", "development")
+# env_file = f".env.{ENV}"
 
-load_dotenv(env_file)
+# load_dotenv(env_file)
 
 # Database
 SQL_DB = os.getenv("SQL_DB")
