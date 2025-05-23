@@ -8,6 +8,7 @@ Environment variables are stored in `.env` files for each environment:
   - `.env` — base variables to set the environment
   - `.env.development` — variables specific to the development environment
   - `.env.production` — variables specific to the production environment
+  - `.env.testing` variables specific to the testing environment
   
   The `APP_ENV` variable controls which environment config is active and is set in the `.env` file. Once this has been set, volumes and all other environmental variables are set dynamically.
 
@@ -32,8 +33,9 @@ Follow these steps to set up and run the project locally using Docker Compose:
     Copy the example environment files to your working directory by running:
     ```bash
     cp .env.example .env
-    cp .env.development.example .env.development
-    cp .env.production.example .env.production
+    cp .env.name.example .env.development
+    cp .env.name.example .env.testing
+    cp .env.name.example .env.production
     ```
 
     Edit each .env* file to set the appropriate environment variables such as database credentials, ports, and APP_ENV.
