@@ -21,21 +21,13 @@ Follow these steps to set up and run the project locally using Docker Compose:
    [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
 
 2. **Clone this repository**
-
+   Run
    ```bash
-   git clone https://your-repo-url.git
-   cd your-repo-folder
+   git clone https://github.com/ielts-ops/trial-testing-booking-in-server.git
+   cd trial-testing-booking-in-server
    ```
 
-3. **Clone this repository**
-
-    Run:
-    ```bash
-    git clone https://your-repo-url.git
-    cd your-repo-folder
-    ```
-
-4. **Create and configure environment files**
+3. **Create and configure environment files**
 
     Copy the example environment files to your working directory by running:
     ```bash
@@ -51,7 +43,7 @@ Follow these steps to set up and run the project locally using Docker Compose:
     APP_ENV=development
     ```
 
-5. **Start the application**
+4. **Start the application**
 
     Run Docker Compose to build and start all containers by running:
     ```
@@ -60,7 +52,7 @@ Follow these steps to set up and run the project locally using Docker Compose:
 
     This will start the database, server, and test containers configured for the environment specified in your .env file.
 
-6. **Access the application**
+5. **Access the application**
 
     Once running, your server should be accessible on http://localhost:8000 (or the port defined in your .env files).
 
