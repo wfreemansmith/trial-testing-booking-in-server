@@ -36,7 +36,7 @@ services:
       - .env.development
     environment:
       - PYTHONPATH=/app
-      - APP_ENV=development
+      - APP_ENV=testing
     depends_on:
       - db
     command: pytest
@@ -44,3 +44,4 @@ services:
 volumes:
   pgdata_development:
   pgdata_production:
+  pgdata_testing:

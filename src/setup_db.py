@@ -1,96 +1,64 @@
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import MetaData, text
 from src.logger import logger
-from src.db import get_legacy_database_connection, get_database_connection
-from src.dao import DAO
+from src.db import get_database
+from src.models import Base, get_model_by_tablename
 import csv
 import os
 
 
-def read_csv(csv_file_path):
-    """Reads a CSV and returns a list of headers, and a list of tuples containing data"""
+def reset_database(engine):
+    """Drops all tables and recreates them"""
+    # get all existing tables in database
+    metadata = MetaData()
+    metadata.reflect(bind=engine)
 
-    with open(csv_file_path, "r", encoding='utf-8-sig') as file:
-        reader = csv.reader(file)
+    # drop all tables
+    logger.info("Dropping tables...")
+    with engine.begin() as conn:
+        for table in reversed(metadata.sorted_tables):
+            logger.debug(f"Dropping {table.name}")
+            conn.execute(text(f"DROP TABLE IF EXISTS {table.name} CASCADE;"))
 
-        headers = next(reader)
-        data = [tuple(row) for row in reader]
-
-        return headers, data
-    
-
-def clean_centre_data(data):
-    """Cleans centre data from legacy DB for SQL upload"""
-
-    centre_data = []
-
-    for i, row in enumerate(data):
-        for j, item in enumerate(row):
-            if item == '.':
-                data[i][j] = None
-        centre_data.append(row[:10])
-
-    return centre_data
-
-def clean_contact_data(data):
-    """Prepares centre contact data from legacy DB for SQL upload"""
-
-    contact_data = []
-
-    filtered_data = [(row[0], *row[10:]) for row in data]
-    for row in filtered_data:
-        centre_id = row[0]
-
-        # add primary and secondary contacts
-        if row[1] and row[2]:
-            name = row[1].strip().strip('\xa0')
-            email = row[2].strip().strip('\xa0')
-            contact_data.append(tuple([centre_id, name, email, True]))
-        if row[3] and row[4]:
-            name = row[3].strip().strip('\xa0')
-            email = row[4].strip().strip('\xa0')
-            contact_data.append(tuple([centre_id, name, email, False]))
-    
-    return contact_data
+    # create all tables
+    logger.info('Creating database tables...')
+    Base.metadata.create_all(engine)
 
 
-def setup_database():
+def seed_data_from_csv(session: Session, tablename: str, csv_filepath: str):
+    """Seeds data from a given CSV file to a given table"""
+    Model = get_model_by_tablename(tablename)
+
+    if Model:
+        with open(csv_filepath, "r", encoding="utf-8-sig") as file:
+            reader = csv.DictReader(file)
+            data = [Model(**row) for row in reader]
+        logger.debug(f"Inserting {len(data)} entries into table '{tablename}'")
+        session.add_all(data)
+        session.commit()
+    else:
+        logger.error(f"Cannot find a table by the name '{tablename}' in ORM.")
+
+
+def setup_database(session: Session):
     """Sets up and seeds database"""
-    conn = get_database_connection()
-    dao = DAO(conn)
-
-    # creates schema
-    dao.run_sql_file("db/schema.sql")
-
-    # adds data from csv files
+    
+    # iterates through all data and inputs
     for root, _, files in os.walk(os.path.join("db", "data")):
         for file in files:
             tablename = os.path.splitext(file)[0].split('.')[1]
-            filepath = os.path.join(root, file)
-            headers, data = read_csv(filepath)
-            logger.info(f"importing {len(headers)} columns and {len(data)} rows for table '{tablename}'")
-
-            dao.insert_many(tablename, headers, data)
-    
-    # gets centre data from legacy database
-    # legacy_conn = get_legacy_database_connection()
-    # legacy_dao = DAO(legacy_conn)
-    # result = legacy_dao.run_sql_file("db/legacy_db_queries/select_centres.sql")
-    # data = result.fetchall()
-
-    # centre_data = clean_centre_data(data)
-    # center_headers = ['centre_id', 'live_centre_number', 'centre_name', 'partner', 'address_1', 'address_2', 'address_3', 'address_4', 'address_5', 'country_id', 'phone_number']
-    # dao.insert_many('centres', center_headers, centre_data)
-    
-    # contact_data = clean_contact_data(data)
-    # contact_headers = ['centre_id', 'contact_name', 'contact_email', 'primary_contact']
-    # dao.insert_many('centre_contacts', contact_headers, contact_data)
-
-    # commit changes to db & close connection
-    dao.close()
-
-
-def seed_test_database():
-    """Runs queries to input test data into database"""
+            csv_filepath = os.path.join(root, file)
+            seed_data_from_csv(
+                session=session,
+                tablename=tablename,
+                csv_filepath=csv_filepath
+                )
 
 
 if __name__ == "__main__":
-    setup_database()
+    engine = get_database()
+    new_session = sessionmaker(bind=engine)
+    session = new_session()
+
+    reset_database(engine)
+    setup_database(session)

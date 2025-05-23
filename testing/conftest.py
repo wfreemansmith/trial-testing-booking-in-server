@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.orm import sessionmaker
-from src.setup_db_orm import setup_database, reset_database
+from src.setup_db import setup_database, reset_database
 from src.db import get_database
 from src.main import app
 
