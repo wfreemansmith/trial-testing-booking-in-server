@@ -3,18 +3,19 @@ import sys
 import argparse
 from dotenv import load_dotenv
 
-# ENV = os.getenv("APP_ENV", "development")
-# env_file = f".env.{ENV}"
+ENV = os.getenv("APP_ENV", "development")
+env_file = f".env.{ENV}"
 
-# load_dotenv(env_file)
+load_dotenv(env_file)
 
 # Database
 SQL_DB = os.getenv("SQL_DB")
 DB_HOST = os.getenv("DB_HOST")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("POSTGRES_USER")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+DB_NAME = os.getenv("POSTGRES_DB")
 DB_PORT = os.getenv("DB_PORT")
+SERVER_PORT = int(os.getenv("SERVER_PORT"))
 LEGACY_DB_HOST = os.getenv("LEGACY_DB_HOST")
 LEGACY_DB_NAME = os.getenv("LEGACY_DB_NAME")
 USERDOMAIN = os.getenv("USERDOMAIN")
