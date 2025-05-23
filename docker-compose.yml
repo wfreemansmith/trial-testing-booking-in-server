@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:15
+    container_name: epa_project_container
+    restart: always
+    env_file:
+      - .env.${APP_ENV}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_${APP_ENV}:/var/lib/postgresql/data
+
+  server:
+    build: .
+    container_name: server_app
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.${APP_ENV}
+    environment:
+      - PYTHONPATH=/app
+      - APP_ENV=${APP_ENV}
+    depends_on:
+      - db
+
+  tests:
+    profiles: ["testing"]
+    build: .
+    container_name: test_runner
+    volumes:
+     - .:/app
+    working_dir: /app
+    env_file:
+      - .env.development
+    environment:
+      - PYTHONPATH=/app
+      - APP_ENV=development
+    depends_on:
+      - db
+    command: pytest
+
+volumes:
+  pgdata_development:
+  pgdata_production:
