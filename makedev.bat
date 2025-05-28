@@ -32,7 +32,7 @@ goto end
 
 :test
 set APP_ENV=testing
-docker compose run --rm tests
+if "%2"=="-vv" (docker-compose run --rm tests pytest -vv) else if "%2"=="-v" (docker-compose run --rm tests pytest -v) else (docker compose run --rm tests)
 docker-compose down
 goto end
 

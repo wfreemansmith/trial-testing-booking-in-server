@@ -24,6 +24,11 @@ def validate_candidate(marking_window_id: int, centre_num: str, candidate: Candi
     """Checks candidate dict against database, adjusts anything which can be adjusted, returns error messages if any error"""
     candidate_errors = []
 
+    if not candidate.paper_sat:
+        candidate.errors.append(
+            ErrorMessage(field="paper_sat", message="Please enter 'AC' or 'GT' for this candidate.")
+        )
+
     # check for blanks etc
     if not candidate.candidate_name:
         candidate.errors.append(
@@ -147,7 +152,6 @@ def ingest_excel_file(file: BinaryIO) -> Tuple[
     for _, row in df.iterrows():
         for version_id_col in VERSION_ID_COLS:
             version_id = row[version_id_col]
-            print(version_id)
 
             if version_id not in seen_versions and pd.notna(version_id):
                 parsed_batches.append(
