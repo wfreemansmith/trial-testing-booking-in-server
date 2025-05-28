@@ -322,10 +322,15 @@ expected_xlsx_res_1 = [
                 "candidate_number": 3,
                 "candidate_name": "Alice White",
                 "paper_sat": None,
-                "writing_version": "P1158",
+                "writing_version": "IP1158",
                 "reading_version": "AP123",
                 "listening_version": "BP59",
-                "errors": []
+                "errors": [
+                    {
+                        "field": "paper_sat",
+                        "message": "Please enter 'AC' or 'GT' for this candidate."
+                    }
+                ]
             },
             {
                 "candidate_number": 4,
