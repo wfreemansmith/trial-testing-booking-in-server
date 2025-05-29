@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
+from pydantic import ValidationError
 from src.routes import upload_router
-from src.errors import http_exception_handler, server_error_handler, file_processing_error_handler, FileProcessingError
+from src.errors import http_exception_handler, server_error_handler, file_processing_error_handler, FileProcessingError, validation_error_handler
 
 def create_app() -> FastAPI:
     app = FastAPI()
@@ -16,6 +17,7 @@ def create_app() -> FastAPI:
 
     # add handlers
     app.add_exception_handler(HTTPException, http_exception_handler)
+    app.add_exception_handler(ValidationError, validation_error_handler)
     app.add_exception_handler(FileProcessingError, file_processing_error_handler)
     app.add_exception_handler(Exception, server_error_handler)
 

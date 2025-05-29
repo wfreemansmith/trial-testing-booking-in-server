@@ -1,8 +1,7 @@
 from fastapi import APIRouter, UploadFile, Form, File, Body, HTTPException, status
-from pydantic import ValidationError
 from src.controllers import upload_controller
 from src.utils import api_response
-from src.schemas.upload_schema import parse_preview_data
+from src.schemas.upload_schema import parse_preview_data, parse_upload_data, UploadPayload
 import json
 
 router = APIRouter()
@@ -23,14 +22,7 @@ async def preview_upload(
     file: UploadFile = File(...)
     ):
     """Process register and return data contained within"""
-    try:
-        parsed_data = parse_preview_data(json.loads(data))
-    except ValidationError as e:
-        ## maybe pass Validation Errors to a specific handler?
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=e.errors()
-        )
+    parsed_data = parse_preview_data(json.loads(data))
 
     if file.filename.endswith('.xlsx'):
         file_bytes = await file.read()
@@ -45,9 +37,12 @@ async def preview_upload(
 
 @router.post("/refresh")
 @api_response()
-def refresh_data(token: str, data: dict = Body(...)):
+def refresh_data(payload: UploadPayload):
     """Validate user inputted data and returns any error flags"""
-    return upload_controller.check(data)
+    token = payload.token
+    data = payload.data
+    parsed_data = parse_upload_data(data)
+    return upload_controller.check(parsed_data)
 
 
 @router.post("/file_upload")
@@ -59,12 +54,16 @@ def file_upload(token: str, data: dict, file: UploadFile):
 
 @router.post("/submit")
 @api_response()
-def submit_upload(token: str, data: dict):
+def submit_upload(payload: UploadPayload):
     """Checks all data and uploads, and if no errors commits to database"""
     ## STEPS
     # check that a file has been uploaded for each batch
     # check that the data is correct
-    checked_data = upload_controller.check(data)
+    token = payload.token
+    data = payload.data
+    parsed_data = parse_upload_data(data)
+    checked_data = upload_controller.check(parsed_data, check_file_upload=True)
+
     if checked_data['errors']:
         return checked_data
     else:

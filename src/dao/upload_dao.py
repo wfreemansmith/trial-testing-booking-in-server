@@ -32,7 +32,7 @@ class UploadDAO(BaseDAO):
         next_part = chr(count + 65)
         return next_part
     
-    def create_upload_object(self, data: Dict) -> Upload:
+    def create_upload_object(self, data: dict) -> Upload:
         """Recevies a dict and returns a Upload object nested with Candidate, Batch and File Upload objects"""
         version_id_reference = {}
 

@@ -8,6 +8,7 @@ from src.dao import CandidateDAO, VersionDAO
 import pandas as pd
 import numpy as np
 from pandas import DataFrame
+from datetime import date, datetime
 
 
 # create database connection
@@ -40,15 +41,16 @@ def validate_candidate(marking_window_id: int, centre_num: str, candidate: Candi
             ErrorMessage(field="candidate_number", message="Candidate number cannot be blank or zero. Please provide a candidate number that you have not used previously.")
         )
 
-    # check database here
-    duplicate = candidate_dao.is_duplicate_candidate(marking_window_id, centre_num, candidate.candidate_name, candidate.candidate_number)
-    if duplicate and type(duplicate) is int:
-        candidate.candidate_number = duplicate + position
-        error = ErrorMessage(field="candidate_number", message="Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes.")
-        candidate_errors.append(error)
-    elif duplicate:
-        error = ErrorMessage(field="duplicate")
-        candidate_errors.append(error)
+    if candidate.candidate_number and candidate.candidate_name:
+        # check database here
+        duplicate = candidate_dao.is_duplicate_candidate(marking_window_id, centre_num, candidate.candidate_name, candidate.candidate_number)
+        if type(duplicate) is int:
+            candidate.candidate_number = duplicate + position
+            error = ErrorMessage(field="candidate_number", message="Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes.")
+            candidate_errors.append(error)
+        elif duplicate:
+            error = ErrorMessage(field="duplicate")
+            candidate_errors.append(error)
 
     return candidate_errors
 
@@ -178,7 +180,7 @@ def parse_lists(candidates_list: List[dict], batches_list: List[dict]) -> Tuple[
     return parsed_candidates, parsed_batches
   
 
-def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[CandidateDict], batches_list: List[BatchDict]) -> Tuple[
+def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[CandidateDict], batches_list: List[BatchDict], test_date: date = None, check_file_upload: bool = False) -> Tuple[
     List[dict],
     List[dict],
     List[dict]
@@ -189,12 +191,30 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
     """
     versions_not_found = set()
     errors_list = []
-    # check version_id against database
+
+    # check test_date
+    if test_date and test_date > datetime.today().date():
+        errors_list.append(
+            ErrorMessage(field="test_date", message="Date cannot be in the future.")
+        )
+
+    # check version_id against database and file upload
     for batch in batches_list:
         version_errors = validate_version(batch.version_id)
         if version_errors:
             versions_not_found.add(batch.version_id)
             errors_list.extend(version_errors)
+        if check_file_upload:
+            if not batch.file_uploads:
+                batch.errors.append(
+                    ErrorMessage(field="file_uploads", message="Please upload a file.")
+                )
+
+    # cleans batch list of non-existent batches
+    filtered_batches_list = [
+        batch for batch in batches_list
+        if not any(error.field == "version_id" for error in batch.errors)
+        ]
     
     # check candidate numbers against database & for any in-list duplicates
     for position, candidate in enumerate(candidates_list):
@@ -209,9 +229,6 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
             candidate.errors.append(
                 ErrorMessage(field="candidate_number", message="Candidate number cannot be duplicated, please use a unique candidate number.")
             )
-
-    # cleans batch list of non-existent batches
-    filtered_batches_list = [batch for batch in batches_list if not batch.errors]
 
     # cleans candidate list of duplicates and adds to errors_list
     duplicate_count = sum(
@@ -235,6 +252,18 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
             ErrorMessage(field="candidates", message="These candidates have already been uploaded to us.")
         )
 
+    # add global errors
+    if any(candidate.errors for candidate in filtered_candidates_list):
+        errors_list.append(
+            ErrorMessage(field="candidates", message="There was an error with one or more candidates.")
+        )
+
+    if any(batch.errors for batch in filtered_batches_list):
+        errors_list.append(
+            ErrorMessage(field="batches", message="There was an error with one or more of the uploads.")
+        )
+
+    # serialise lists
     checked_candidate_list = serialise_pydantic_list(filtered_candidates_list)
     for cand in checked_candidate_list:
         for version_id in VERSION_ID_COLS:

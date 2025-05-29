@@ -1,2 +1,2 @@
-from src.errors.handlers import http_exception_handler, file_processing_error_handler, server_error_handler
+from src.errors.handlers import http_exception_handler, file_processing_error_handler, server_error_handler, validation_error_handler
 from src.errors.custom_expeptions import FileProcessingError
