@@ -1,25 +1,24 @@
 import pytest
 import os
-from db.test_data.uploads import expected_xlsx_res_1
+from db.test_data.uploads import upload_preview_expected_res, upload_refresh_inputs, upload_refresh_expected_responses
 import json
 
 
-## Test data setup
-
 TEST_REGISTER_LOCATION = "./testing/test_documents/"
-PREVIEW_TEST_DATA = [
-    (f"{entry.get('filename')}.xlsx",
-     entry.get('centre_id'),
-     entry.get('candidates'),
-     entry.get('batches'),
-     entry.get('errors'))
-     for entry in expected_xlsx_res_1
-    ]
-PREVIEW_TEST_IDS = [
-    entry.get('filename') for entry in expected_xlsx_res_1
-]
 
 class TestUploadPreview:
+    PREVIEW_TEST_DATA = [
+        (f"{entry.get('filename')}.xlsx",
+        entry.get('centre_id'),
+        entry.get('candidates'),
+        entry.get('batches'),
+        entry.get('errors'))
+        for entry in upload_preview_expected_res
+        ]
+    PREVIEW_TEST_IDS = [
+        entry.get('filename') for entry in upload_preview_expected_res
+        ]
+
     @pytest.mark.parametrize(
             "filename, centre_id, expected_candidates, expected_batches, expected_errors",
             PREVIEW_TEST_DATA,
@@ -54,11 +53,11 @@ class TestUploadPreview:
         )
 
         assert content['data']['candidates'] == expected_candidates, (
-            "Expected candidates were not correctly resturned"
+            "Expected candidates were not correctly returned"
         )
 
         assert content['data']['batches'] == expected_batches, (
-            "Expected batches were not correctly resturned"
+            "Expected batches were not correctly returned"
         )
 
         assert content['data']['errors'] == expected_errors, (
@@ -205,4 +204,45 @@ class TestUploadPreview:
             f"Recieved error message: {content['message']}"
         )
 
-        # Add more tests
+        # Add more tests:
+        # For versions not found, for candidates already on the database
+
+class TestUploadRefresh:
+    REFRESH_TEST_IDS = [
+        entry.pop('TEST_ID') for entry in upload_refresh_inputs
+    ]
+    REFRESH_TEST_DATA = [
+        (upload_refresh_inputs[i], upload_refresh_expected_responses[i]) for i in range(len(upload_refresh_inputs))
+    ]
+
+    @pytest.mark.parametrize("input, expected_output", REFRESH_TEST_DATA, ids=REFRESH_TEST_IDS)
+    async def test_refresh_POST_200(self, async_client, input, expected_output):
+        """
+        POST upload/refresh 200:
+        Tests happy endpoints, no errors found and expected errors found
+        """
+        ## ARRANGE
+        payload = {
+            "token": "dummy-token",
+            "data": input
+        }
+
+        ## ACT
+        response = await async_client.post("/upload/refresh", json=payload)
+        content = response.json()
+
+        assert response.status_code == 200, (
+            f"Expected 200, got {response.status_code}"
+        )
+
+        assert content['data']['candidates'] == expected_output['candidates'], (
+            "Expected candidates were not correctly returned"
+        )
+
+        assert content['data']['batches'] == expected_output['batches'], (
+            "Expected batches were not correctly returned"
+        )
+
+        assert content['data']['errors'] == expected_output['errors'], (
+            "Expected errors were not returned"
+        )

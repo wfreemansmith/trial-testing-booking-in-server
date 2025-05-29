@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
+from datetime import date
 
 
 class ErrorMessage(BaseModel):
@@ -13,14 +14,15 @@ class CandidateDict(BaseModel):
     writing_version: Optional[str]
     reading_version: Optional[str]
     listening_version: Optional[str]
-    writing_version_id: Optional[str]
-    reading_version_id: Optional[str]
-    listening_version_id: Optional[str]
+    writing_version_id: Optional[str] = None
+    reading_version_id: Optional[str] = None
+    listening_version_id: Optional[str] = None
     errors: List[ErrorMessage] = []
 
 class BatchDict(BaseModel):
     version_id: str
     component_id: str
+    file_uploads: Optional[list] = []
     errors: List[ErrorMessage] = []
 
 class UploadPreviewData(BaseModel):
@@ -32,3 +34,18 @@ def validate_preview_data(data: dict) -> dict:
 
 def parse_preview_data(data: dict) -> UploadPreviewData:
     return UploadPreviewData(**data)
+
+class UploadData(BaseModel):
+    centre_id: str = Field(pattern=r'^\d{4}$')
+    marking_window_id: int
+    epd_number: Optional[str] = None
+    test_date: Optional[date] = None
+    batches: List[BatchDict]
+    candidates: List[CandidateDict]
+
+def parse_upload_data(data: dict) -> UploadData:
+    return UploadData(**data)
+
+class UploadPayload(BaseModel):
+    token: str
+    data: dict
