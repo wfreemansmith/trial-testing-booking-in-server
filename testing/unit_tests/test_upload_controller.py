@@ -1,5 +1,5 @@
 # from src.controllers import upload_controller
-# from db.test_data.uploads import upload_preview_expected_res
+# from testing.test_data.uploads import upload_preview_expected_res
 # import pytest
 # import json
 

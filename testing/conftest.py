@@ -12,7 +12,7 @@ from src.db import get_database
 from src.main import app
 
 @pytest.fixture
-def setup_teardown():
+def db_session():
     """Sets up and tears down test db data"""
     engine = get_database()
     Session = sessionmaker(bind=engine)

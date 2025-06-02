@@ -33,10 +33,9 @@ services:
      - .:/app
     working_dir: /app
     env_file:
-      - .env.development
+      - .env.${APP_ENV}
     environment:
       - PYTHONPATH=/app
-      - APP_ENV=testing
     depends_on:
       - db
     command: pytest

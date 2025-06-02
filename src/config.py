@@ -3,8 +3,13 @@ import sys
 import argparse
 from dotenv import load_dotenv
 
-ENV = os.getenv("APP_ENV", "development")
+if 'pytest' in sys.modules:
+    ENV = "testing"
+else:
+    ENV = os.getenv("APP_ENV", "development")
+
 env_file = f".env.{ENV}"
+print(env_file)
 
 load_dotenv(env_file)
 
@@ -20,7 +25,6 @@ LEGACY_DB_HOST = os.getenv("LEGACY_DB_HOST")
 LEGACY_DB_NAME = os.getenv("LEGACY_DB_NAME")
 USERDOMAIN = os.getenv("USERDOMAIN")
 USERNAME = os.getenv("USERNAME")
-## also include DRIVER for SQL Server
 
 # Files.com
 FILE_UPLOAD_API_KEY = os.getenv("FILE_UPLOAD_API_KEY")

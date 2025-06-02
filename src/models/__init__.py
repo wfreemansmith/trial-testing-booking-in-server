@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, validates, declarative_base
+from sqlalchemy.orm import relationship, validates, declarative_base, reconstructor
 
 Base = declarative_base()
 
@@ -37,7 +37,7 @@ class MarkingWindow(Base):
     __tablename__ = "marking_windows"
 
     # generated fields
-    window_id = Column(Integer, primary_key=True, autoincrement=True)
+    marking_window_id = Column(Integer, primary_key=True, autoincrement=True)
     # provided fields
     window_name = Column(String(50), nullable=False)
     window_start = Column(Date, nullable=False)
@@ -89,6 +89,7 @@ class Language(Base):
 
     # relationships
     language_family = relationship("LanguageFamily", back_populates="languages")
+    candidates = relationship("Candidate", back_populates="language")
 
 
 class Centre(Base):
@@ -131,6 +132,13 @@ class CentreContact(Base):
     # relationships
     centre = relationship("Centre", back_populates="contacts")
 
+    # validation
+    @validates('primary_contact')
+    def convert_to_boolean(self, key, value):
+        if isinstance(value, str):
+            return value.strip().lower() in ('true', '1', 'yes', 'y')
+        return bool(value)
+
 
 class CentreRequests(Base):
     """Contains all centre requests by marking window. Used to create upload folders, share links, etc."""
@@ -139,7 +147,7 @@ class CentreRequests(Base):
     # generated fields
     request_id = Column(Integer, primary_key=True, autoincrement=True)
     # provided fields
-    window_id = Column(Integer, ForeignKey("marking_windows.window_id"))
+    marking_window_id = Column(Integer, ForeignKey("marking_windows.marking_window_id"))
     centre_id = Column(String(4), ForeignKey("centres.centre_id"), nullable=False)
     acw_requests = Column(Integer)
     acr_requests = Column(Integer)
@@ -168,18 +176,17 @@ class Examiner(Base):
     """Table containing all examiners details, including their personal details, country, as_id and role"""
     __tablename__ = "examiners"
 
-    # generated fields
-    examiner_id = Column(Integer, primary_key=True, autoincrement=True)
     # provided fields
+    examiner_id = Column(Integer, primary_key=True) # use AS ID
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     contact_email = Column(String, nullable=False)
-    as_id = Column(Integer, nullable=False)
+    # as_id = Column(Integer, nullable=False)
     country = Column(String)
     currency = Column(String)
     examiner_role_id = Column(Integer, ForeignKey("examiner_roles.examiner_role_id"))
     last_contract_signed = Column(String)
-    active = Column(Boolean, default=False)
+    active = Column(Boolean, default=True)
 
     # relationships
     examiner_role = relationship("ExaminerRole", back_populates="examiners")
@@ -239,23 +246,24 @@ class Version(Base):
     # relationships
     component = relationship("Component", back_populates="versions")
     answer_key = relationship("AnswerKey", back_populates="version")
-    candidates = relationship("Candidate", back_populates="version")
+    # candidates = relationship("Candidate", back_populates="version")
     reports = relationship("VersionReport", back_populates="version")
     cwas = relationship("CommonWrongAnswer", back_populates="version")
     batches = relationship("Batch", back_populates="version")
     responses = relationship("CandidateResponse", back_populates="version")
-    
-    # validation
-    # @validates("paper")
-    # def validate_paper(self, key, value):
-    #     if value not in ("", "AC", "GT"):
-    #         raise ValueError(f"Invalid paper value: {value}")
-    #     return value
 
     @validates('paper', 'component_id', 'version_name')
     def generate_id(self, key, value):
-        setattr(self, key, value)
-        self.version_id = f"{self.paper}{self.component_id}{self.version_name}"
+        paper = value if key == 'paper' else self.paper
+        if paper not in ("", "AC", "GT"):
+            raise ValueError(f"Invalid paper value: {paper}")
+        
+        component_id = value if key == 'component_id' else self.component_id
+        version_name = value if key == 'version_name' else self.version_name
+        
+        if paper is not None and component_id is not None and version_name is not None:
+            self.version_id = f"{paper}{component_id}{version_name}"
+        
         return value
 
 
@@ -299,9 +307,10 @@ class AnswerKey(Base):
     # validation
     @validates('version_id', 'question_number')
     def generate_id(self, key, value):
-        setattr(self, key, value)
-        if self.version_id and self.question_number:
-            self.answer_id = f"{self.version_id}-{self.question_number}"
+        version_id = value if key == 'version_id' else self.version_id
+        question_number = value if key == 'question_number' else self.question_number
+        if version_id and question_number:
+            self.answer_id = f"{version_id}-{question_number}"
         return value
 
     @validates('productive_answer', 'anchor_question')
@@ -336,7 +345,7 @@ class Upload(Base):
     # generated fields
     upload_id = Column(String, primary_key=True)
     # provided fields
-    session_id = Column(Integer, ForeignKey("marking_windows.session_id"), nullable=False)
+    marking_window_id = Column(Integer, ForeignKey("marking_windows.marking_window_id"), nullable=False)
     centre_id = Column(String(4), ForeignKey("centres.centre_id"), nullable=False)
     part_delivery = Column(String(2), nullable=False)
     epd_number = Column(String(9))
@@ -352,11 +361,11 @@ class Upload(Base):
     candidates = relationship("Candidate", back_populates='upload', cascade="all, delete-orphan")
 
     # validation
-    @validates('session_id', 'centre_id', 'part_delivery')
+    @validates('marking_window_id', 'centre_id', 'part_delivery')
     def generate_id(self, key, value):
         setattr(self, key, value)
-        if self.session_id and self.centre_id and self.part_delivery:
-            self.upload_id = f"{self.session_id}-{self.centre_id}-{self.part_delivery}"
+        if self.marking_window_id and self.centre_id and self.part_delivery:
+            self.upload_id = f"{self.marking_window_id}-{self.centre_id}-{self.part_delivery}"
         return value
     
 

@@ -37,3 +37,21 @@ TO DO:
 [ ] Flesh out upload endpoints and controllers
 [X] Work in Pydantic models...
 [X] Error handling
+
+Seeding database
+Testing:
+[X] centres
+[X] centre_contacts
+[ ] centre_requests
+[X] examiners
+[ ] examiner availability
+[X] versions
+[ ] version_reports
+[X] answer_keys
+
+Developemnt:
+[X] centres
+[X] centre_contacts
+[X] examiners
+[X] versions (just W2 2025 versions so far)
+[X] answer_keys (just W2 2025 NEW versions so far)

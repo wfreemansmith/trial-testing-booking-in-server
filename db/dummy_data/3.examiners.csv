@@ -1,0 +1,12 @@
+﻿examiner_id,first_name,last_name,contact_email,country,currency,examiner_role_id,last_contract_signed,active
+123456,Wesley,Freeman-Smith,wesley.freeman-smith@cambridge.org,UK,GBP,2,Aug-24,TRUE
+234567,Alice,Wallberg,alice@wallberg.com,CAN,CAD,2,Aug-24,TRUE
+345678,Dave,PhD,dave@phd.com,UK,GBP,3,Aug-24,TRUE
+456789,Rose,McGowern,rose@mcgowern.com,UK,GBP,2,May 2024-July 2024,FALSE
+567900,Temu,Fantasia,temu@fantasia.com,UK,GBP,3,May 2024-July 2024,FALSE
+679011,Steve,McQueen,steve@mcqueen.com,CAN,CAD,2,Aug-24,TRUE
+790122,Rubber,Duck,rubber@duck.com,UK,GBP,2,Aug-24,TRUE
+901233,Frumpy,Tart-Knickers,frumpy@tart-knickers.com,CAN,CAD,2,Aug-24,TRUE
+901234,Fallopian,Hellscape,fallopian@hellscape.com,UK,GBP,2,Aug-24,TRUE
+901235,Sunbathing,Panda,sunbathing@panda.com,CAN,CAD,2,Aug-24,TRUE
+901236,Dickens,McFiggins,dickens@mcfiggins.com,AUS,AUD,1,Aug-24,TRUE
