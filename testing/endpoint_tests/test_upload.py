@@ -1,6 +1,6 @@
 import pytest
 import os
-from db.test_data.uploads import upload_preview_expected_res, upload_refresh_inputs, upload_refresh_expected_responses
+from testing.test_data.uploads import upload_preview_expected_res, upload_refresh_inputs, upload_refresh_expected_responses
 import json
 
 

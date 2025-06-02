@@ -26,13 +26,22 @@ docker-compose down -v
 goto end
 
 :seed
-docker-compose run server python -m src.setup_db
+docker compose up -d
+if "%2"=="" (
+    docker compose exec server python -m src.setup_db
+) else (
+    docker compose exec server python -m src.setup_db %2
+)
 docker-compose down
 goto end
 
 :test
 set APP_ENV=testing
-if "%2"=="-vv" (docker-compose run --rm tests pytest -vv) else if "%2"=="-v" (docker-compose run --rm tests pytest -v) else (docker compose run --rm tests)
+if "%2"=="" (
+    docker-compose run --rm tests
+) else (
+    docker-compose run --rm tests pytest %2
+)
 docker-compose down
 goto end
 
