@@ -19,12 +19,12 @@ from datetime import datetime
 
 
 class UploadDAO(BaseDAO):
-    def get_next_part_delivery(self, session_id: int, centre_id: str) -> str:
+    def get_next_part_delivery(self, marking_window_id: int, centre_id: str) -> str:
         """Returns next part delivery string based on count of previous uploads"""
         stmt = select(func.count()).where(
             and_(
                 Upload.centre_id == centre_id,
-                Upload.session_id == session_id
+                Upload.marking_window_id == marking_window_id
             )
         )
 
@@ -38,10 +38,15 @@ class UploadDAO(BaseDAO):
 
         # format upload
         data['part_delivery'] = self.get_next_part_delivery(
-            session_id=data.get('session_id'),
+            marking_window_id=data.get('marking_window_id'),
             centre_id=data.get('centre_id')
             )
         data['test_date'] = datetime.strptime(data['test_date'], "%Y-%m-%d") if data['test_date'] else None
+
+        # create upload first
+        upload_data = {k: v for k, v in data.items() if k not in ['batches', 'candidates']}
+        upload = Upload(**upload_data)
+        logger.debug(f"Creating upload '{upload.upload_id}'")
 
         # format batches, uploads and get batch_ids
         batches_data = data.pop('batches')
@@ -49,14 +54,18 @@ class UploadDAO(BaseDAO):
         for batch_data in batches_data:
             file_upload_data = batch_data.pop('file_uploads')
             file_uploads = [FileUpload(**file_upload) for file_upload in file_upload_data]
+            batch_data['upload_id'] = upload.upload_id
             batch = Batch(**batch_data, file_uploads=file_uploads)
+            logger.debug(f"Creating batch '{batch.batch_id}'")
             version_id_reference[batch.version_id] = batch.batch_id
             batches.append(batch)
 
         # format candidates
         candidates_data = data.pop('candidates')
+    
         candidates = []
         for candidate_data in candidates_data:
+            candidate_data['upload_id'] = upload.upload_id
             for component in ('writing', 'reading', 'listening'):
                 version_id = format_version_id(
                     paper=candidate_data.get("paper_sat"),
@@ -64,15 +73,17 @@ class UploadDAO(BaseDAO):
                     version=candidate_data.pop(f'{component}_version'))
                 candidate_data[f'{component}_batch_id'] = version_id_reference.get(version_id, None)
             candidate = Candidate(**candidate_data)
+            logger.debug(f"Creating candidate '{candidate.candidate_id}'")
             candidates.append(candidate)
 
-        return Upload(**data, candidates=candidates, batches=batches)
+        upload.batches = batches
+        upload.candidates = candidates
+        return upload
 
 
     def insert_upload(self, data: Dict):
         """Insert a single record into 'uploads' table from a provided data dict"""
         upload = self.create_upload_object(data)
-        logger.info(f"Creating new upload on ID '{upload.upload_id}'")
         self.session.add(upload)
         self.session.commit()
 

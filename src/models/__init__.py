@@ -1,6 +1,9 @@
 from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, validates, declarative_base, reconstructor
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import event
+from src.logger import logger
 
 Base = declarative_base()
 
@@ -310,7 +313,7 @@ class AnswerKey(Base):
         version_id = value if key == 'version_id' else self.version_id
         question_number = value if key == 'question_number' else self.question_number
         if version_id and question_number:
-            self.answer_id = f"{version_id}-{question_number}"
+            self.answer_id = f"{version_id}_{question_number}"
         return value
 
     @validates('productive_answer', 'anchor_question')
@@ -361,12 +364,34 @@ class Upload(Base):
     candidates = relationship("Candidate", back_populates='upload', cascade="all, delete-orphan")
 
     # validation
-    @validates('marking_window_id', 'centre_id', 'part_delivery')
-    def generate_id(self, key, value):
-        setattr(self, key, value)
-        if self.marking_window_id and self.centre_id and self.part_delivery:
-            self.upload_id = f"{self.marking_window_id}-{self.centre_id}-{self.part_delivery}"
-        return value
+    # @validates('marking_window_id', 'centre_id', 'part_delivery')
+    # def generate_id(self, key, value):
+    #     marking_window_id = value if key == 'marking_window_id' else self.marking_window_id
+    #     centre_id = value if key == 'centre_id' else self.centre_id
+    #     part_delivery = value if key == 'part_delivery' else self.part_delivery
+        
+    #     if marking_window_id and centre_id and part_delivery:
+    #         self.upload_id = f"{marking_window_id}_{centre_id}_{part_delivery}"
+    #     return value
+    def __init__(self, marking_window_id=None, centre_id=None, part_delivery=None, 
+                 epd_number=None, test_date=None, upload_date=None, 
+                 rescan_needed=False, sent_date=None, **kwargs):
+        # Set the required fields first
+        self.marking_window_id = marking_window_id
+        self.centre_id = centre_id
+        self.part_delivery = part_delivery
+        self.epd_number = epd_number
+        self.test_date = test_date
+        self.upload_date = upload_date
+        self.rescan_needed = rescan_needed
+        self.sent_date = sent_date
+        
+        # Generate the primary key
+        if marking_window_id and centre_id and part_delivery:
+            self.upload_id = f"{marking_window_id}_{centre_id}_{part_delivery}"
+        
+        # Call parent constructor with any remaining kwargs
+        super().__init__(**kwargs)
     
 
 class Batch(Base):
@@ -395,20 +420,42 @@ class Batch(Base):
     file_uploads = relationship("FileUpload", back_populates='batch')
 
     # validation
-    @validates('upload_id', 'version_id')
-    def generate_id(self, key, value):
-        setattr(self, key, value)
-        if self.upload_id and self.version_id:
-            self.batch_id = f"{self.upload_id}-{str(self.version_id)}"
-        return value
+    # @validates('upload_id', 'version_id')
+    # def generate_id(self, key, value):
+    #     upload_id = value if key == 'upload_id' else self.upload_id
+    #     version_id = value if key == 'version_id' else self.version_id
+        
+    #     if upload_id and version_id:
+    #         self.batch_id = f"{upload_id}_{str(version_id)}"
+    #     return value
+
+    # @hybrid_property
+    # def batch_id(self):
+    #     return f"{self.upload_id}_{str(self.version_id)}"
+
+    def __init__(self, upload_id=None, version_id=None, component_id=None, examiner_id=None, **kwargs):
+        # Set the foreign key fields first
+        self.upload_id = upload_id
+        self.version_id = version_id
+        self.component_id = component_id
+        self.examiner_id = examiner_id
+        
+        # Generate the primary key
+        if upload_id and version_id:
+            self.batch_id = f"{upload_id}_{version_id}"
+        
+        # Call parent constructor with any remaining kwargs
+        super().__init__(**kwargs)
+
+# @event.listens_for(Batch, 'before_insert')
+# def set_batch_id(mapper, connection, target):
+#     if not target.batch_id and target.upload_id and target.version_id:
+#         target.batch_id = f"{target.upload_id}_{target.version_id}"
     
 
 class Candidate(Base):
     """Each entry represents one candidate. Candidate can belong to one Upload, and to one Batch for each component."""
     __tablename__ = 'candidates'
-    # __table_args__ = (
-    #     UniqueConstraint('upload_id', 'candidate_number', name='uq_candidate_upload_number')
-    #     )
 
     # generated fields
     candidate_id = Column(String, primary_key=True)
@@ -444,17 +491,64 @@ class Candidate(Base):
     responses = relationship('CandidateResponse', back_populates='candidate')
 
     # validation
+    # @validates("paper_sat")
+    # def validate_paper(self, key, value):
+    #     if value not in ("AC", "GT"):
+    #         raise ValueError(f"Invalid paper value: {value}")
+    #     return value
+    
+    # @validates('upload_id', 'candidate_number')
+    # def generate_id(self, key, value):
+    #     upload_id = value if key == 'upload_id' else self.upload_id
+    #     candidate_number = value if key == 'candidate_number' else self.candidate_number
+        
+    #     if upload_id and candidate_number:
+    #         self.candidate_id = f"{upload_id}_{str(candidate_number).zfill(4)}"
+    #     return value
+    def __init__(self, upload_id=None, candidate_number=None, candidate_name=None, 
+                 paper_sat=None, writing_batch_id=None, reading_batch_id=None, 
+                 listening_batch_id=None, writing_t1_ta=None, writing_t1_cc=None, 
+                 writing_t1_lr=None, writing_t1_gra=None, writing_t2_ta=None, 
+                 writing_t2_cc=None, writing_t2_lr=None, writing_t2_gra=None, 
+                 writing_underlength=None, writing_off_topic=None, language_id=None, **kwargs):
+        
+        # Set the required fields first
+        self.upload_id = upload_id
+        self.candidate_number = candidate_number
+        self.candidate_name = candidate_name
+        
+        # Validate paper_sat before setting
+        if paper_sat is not None and paper_sat not in ("AC", "GT"):
+            raise ValueError(f"Invalid paper value: {paper_sat}")
+        self.paper_sat = paper_sat
+        
+        # Set optional fields
+        self.writing_batch_id = writing_batch_id
+        self.reading_batch_id = reading_batch_id
+        self.listening_batch_id = listening_batch_id
+        self.writing_t1_ta = writing_t1_ta
+        self.writing_t1_cc = writing_t1_cc
+        self.writing_t1_lr = writing_t1_lr
+        self.writing_t1_gra = writing_t1_gra
+        self.writing_t2_ta = writing_t2_ta
+        self.writing_t2_cc = writing_t2_cc
+        self.writing_t2_lr = writing_t2_lr
+        self.writing_t2_gra = writing_t2_gra
+        self.writing_underlength = writing_underlength
+        self.writing_off_topic = writing_off_topic
+        self.language_id = language_id
+        
+        # Generate the primary key
+        if upload_id and candidate_number is not None:
+            self.candidate_id = f"{upload_id}_{str(candidate_number).zfill(4)}"
+        
+        # Call parent constructor with any remaining kwargs
+        super().__init__(**kwargs)
+
     @validates("paper_sat")
     def validate_paper(self, key, value):
-        if value not in ("AC", "GT"):
+        if value is not None and value not in ("AC", "GT"):
             raise ValueError(f"Invalid paper value: {value}")
-        return value
-    
-    @validates('upload_id', 'candidate_number')
-    def generate_id(self, key, value):
-        setattr(self, key, value)
-        if self.upload_id and self.candidate_number:
-            self.candidate_id = f"{self.upload_id}-{str(self.candidate_number).zfill(4)}"
         return value
 
 
@@ -479,9 +573,11 @@ class CandidateResponse(Base):
     # validation
     @validates('version_id', 'question_number')
     def generate_id(self, key, value):
-        setattr(self, key, value)
-        if self.version_id and self.question_number:
-            self.answer_id = f"{self.version_id}-{self.question_number}"
+        version_id = value if key == 'version_id' else self.version_id
+        question_number = value if key == 'question_number' else self.question_number
+        
+        if version_id and question_number:
+            self.answer_id = f"{version_id}_{question_number}"
         return value
 
 
