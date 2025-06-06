@@ -1,6 +1,8 @@
 import pytest
+import copy
 from testing.test_data.uploads import upload_preview_expected_res, complete_upload_json
 from src.dao.upload_dao import UploadDAO
+
 
 # CREATE opertations
 # Happy paths
@@ -18,7 +20,7 @@ from src.dao.upload_dao import UploadDAO
 
 class TestUnitUploadDAO:
     COMPLETE_UPLOAD_TEST_DATA = [
-        (entry,
+        (copy.deepcopy(entry),
          entry.get('marking_window_id'),
          entry.get('centre_id'),
          entry.get('batches'),
@@ -30,7 +32,7 @@ class TestUnitUploadDAO:
     # Happy paths
     @pytest.mark.parametrize("input_data, marking_window_id, centre_id, batches, candidates", COMPLETE_UPLOAD_TEST_DATA, ids=COMPLETE_UPLOAD_TEST_IDS)
     def test_succesful_create_upload_object(self, db_session, input_data, marking_window_id, centre_id, batches, candidates):
-        dao = UploadDAO(engine=db_session)
+        dao = UploadDAO(session=db_session)
         upload_object = dao.create_upload_object(data=input_data)
         
         # check part delivery
@@ -52,11 +54,6 @@ class TestUnitUploadDAO:
         for expected_candidate_id in expected_candidate_ids:
             match = sum(candidate.candidate_id == expected_candidate_id for candidate in upload_object.candidates)
             assert match == 1, f"Unique Candidate IDs not initalised correctly, expected '{expected_batch_id}' but test found {match} results with that name"
-
-    # @pytest.mark.parametrize("input", complete_upload_json)
-    # def test_select(self, db_session, input):
-    #     dao = UploadDAO(engine=db_session)
-    #     dao.insert_upload(data=input)
 
 
 
