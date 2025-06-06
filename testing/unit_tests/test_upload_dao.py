@@ -52,3 +52,12 @@ class TestUnitUploadDAO:
         for expected_candidate_id in expected_candidate_ids:
             match = sum(candidate.candidate_id == expected_candidate_id for candidate in upload_object.candidates)
             assert match == 1, f"Unique Candidate IDs not initalised correctly, expected '{expected_batch_id}' but test found {match} results with that name"
+
+    # @pytest.mark.parametrize("input", complete_upload_json)
+    # def test_select(self, db_session, input):
+    #     dao = UploadDAO(engine=db_session)
+    #     dao.insert_upload(data=input)
+
+
+
+    

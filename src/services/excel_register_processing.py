@@ -43,7 +43,7 @@ def validate_candidate(marking_window_id: int, centre_num: str, candidate: Candi
 
     if candidate.candidate_number and candidate.candidate_name:
         # check database here
-        duplicate = candidate_dao.is_duplicate_candidate(marking_window_id, centre_num, candidate.candidate_name, candidate.candidate_number)
+        duplicate = candidate_dao.is_duplicate_candidate(marking_window_id, centre_num, [candidate.candidate_number, candidate.candidate_name])
         if type(duplicate) is int:
             candidate.candidate_number = duplicate + position
             error = ErrorMessage(field="candidate_number", message="Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes.")
