@@ -14,14 +14,13 @@ from src.main import app
 @pytest.fixture
 def db_session():
     """Sets up and tears down test db data"""
-    engine = get_database()
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    session, engine = get_database()
 
     reset_database(engine)
     setup_database(session)
+    session.flush()
 
-    yield engine
+    yield session
 
     session.close()
 

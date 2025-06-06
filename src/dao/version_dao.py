@@ -3,8 +3,8 @@ from src.logger import logger
 from src.models import Version
 
 class VersionDAO(BaseDAO):
-    def __init__(self, engine):
-        super().__init__(engine=engine)
+    def __init__(self, session):
+        super().__init__(session=session)
         self.model = Version
 
     def version_exists(self, version_id: str) -> bool:

@@ -2,12 +2,17 @@ from src.config import SQL_DB, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, 
 import psycopg2
 import pyodbc
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 
 def get_database():
-    """Returns an SQL alchemy database engine"""
+    """Returns an SQL alchemy database engine and session"""
     DB_STRING = f"{SQL_DB}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    return create_engine(DB_STRING)
+    engine = create_engine(DB_STRING)
+    new_session = sessionmaker(bind=engine)
+    session = new_session()
+    return session, engine
+
 
 
 def get_database_connection():

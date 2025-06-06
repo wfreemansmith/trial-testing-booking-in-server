@@ -1,10 +1,8 @@
 from sqlalchemy import select, and_
-from sqlalchemy.orm import sessionmaker
 
 class BaseDAO():
-    def __init__(self, engine):
-        Session = sessionmaker(bind=engine)
-        self.session = Session()
+    def __init__(self, session):
+        self.session = session
         self.model = None
 
     def select(self, **kwargs):

@@ -19,8 +19,8 @@ from datetime import datetime
 
 
 class UploadDAO(BaseDAO):
-    def __init__(self, engine):
-        super().__init__(engine=engine)
+    def __init__(self, session):
+        super().__init__(session=session)
         self.model = Candidate
 
     def get_next_part_delivery(self, marking_window_id: int, centre_id: str) -> str:

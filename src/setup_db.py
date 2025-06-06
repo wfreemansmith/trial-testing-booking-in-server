@@ -60,9 +60,7 @@ def setup_database(session: Session):
 
 if __name__ == "__main__":
     logger.info(f"Using database '{DB_NAME}'")
-    engine = get_database()
-    new_session = sessionmaker(bind=engine)
-    session = new_session()
+    session, engine = get_database()
 
     reset_database(engine)
     setup_database(session)

@@ -1,26 +1,23 @@
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from src.dao import BaseDAO
 from src.logger import logger
-from src.models import Candidate
+from src.models import Candidate, Upload
+from itertools import chain
 
 class CandidateDAO(BaseDAO):
-    def __init__(self, engine):
-        super().__init__(engine=engine)
+    def __init__(self, session):
+        super().__init__(session=session)
         self.model = Candidate
-        
-    def get_candidates(self, **kwargs):
-        """Get candidates by keyword arguments"""
-        if len(kwargs) > 1:
-            stmt = select(Candidate).where(
-                and_(
-                    getattr(Candidate, k) == v for k, v in kwargs.items()
-                )
-            )
+
+    def select_candidates_by_upload(self, marking_window_id: int, centre_id: str):
+        """Finds candidates by upload id markers"""
+        stmt = select(self.model).where(self.model.candidate_id.like(f'{marking_window_id}_{centre_id}%'))
+        return self.session.execute(stmt).scalars().all()
 
     def is_duplicate_candidate(
             self,
             marking_window_id: int,
-            centre_num: str,
+            centre_id: str,
             candidates: list
             ):
         """Checks candidate names and numbers against database, returns truthy if duplicate, falsy if not.
@@ -28,6 +25,8 @@ class CandidateDAO(BaseDAO):
         If just candidate number is duplcated, returns next available number.
         If not duplicate, returns false.
         Accepts list of number, name, or a list of lists"""
+        
+        # prepares input
         if isinstance(candidates[0], int) and isinstance(candidates[1], str):
             candidate_list = [candidates]
         elif isinstance(candidates[0], list):
@@ -35,14 +34,31 @@ class CandidateDAO(BaseDAO):
         else:
             raise Exception("Wrong candidate type provided to 'is_duplicate_candidate'")
         
-        # logger.debug(f"Checking marking window {marking_window_id}, centre '{centre_num}' for duplicate candidates...")
-        # # get uploads from centre on db
-        # existing_uploads = []
+        logger.debug(f"Checking marking window {marking_window_id}, centre '{centre_id}' for duplicate candidates...")
         
-        # duplicates_found = 0
-        # list_to_return = []
-        # for candidate in candidate_list:
-        #     if candidate[0] in existing_uploads[0] and candidate[1] in existing_uploads[1]:
-        #         list_to_return.append(True)
+        # get existing candidates from database
+        existing_candidates = self.select_candidates_by_upload(marking_window_id, centre_id)
+        if not existing_candidates:
+            return [False * len(candidate_list)]
+
+        # finds the highest existing cand number in either the provided list or the db
+        last_cand_num = max(
+            chain(
+                (candidate.candidate_number for candidate in existing_candidates),
+                (candidate[0] for candidate in candidate_list)
+                )
+        )
+
+        # for each candidate, finds whether they are duplicates or not and returns as a list
+        list_to_return = []
+
+        for candidate in candidate_list:
+            if any(entry.candidate_number == candidate[0] and entry.candidate_name == candidate[1] for entry in existing_candidates):
+                list_to_return.append(True)
+            elif any(entry.candidate_number == candidate[0] and entry.candidate_name != candidate[1] for entry in existing_candidates):
+                last_cand_num += 1
+                list_to_return.append(last_cand_num)
+            else:
+                list_to_return.append(False)
             
-        return False
+        return list_to_return
