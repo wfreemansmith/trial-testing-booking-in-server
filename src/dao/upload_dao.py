@@ -19,6 +19,10 @@ from datetime import datetime
 
 
 class UploadDAO(BaseDAO):
+    def __init__(self, engine):
+        super().__init__(engine=engine)
+        self.model = Candidate
+
     def get_next_part_delivery(self, marking_window_id: int, centre_id: str) -> str:
         """Returns next part delivery string based on count of previous uploads"""
         stmt = select(func.count()).where(
@@ -41,7 +45,8 @@ class UploadDAO(BaseDAO):
             marking_window_id=data.get('marking_window_id'),
             centre_id=data.get('centre_id')
             )
-        data['test_date'] = datetime.strptime(data['test_date'], "%Y-%m-%d") if data['test_date'] else None
+        if not isinstance(data['test_date'], datetime):
+            data['test_date'] = datetime.strptime(data['test_date'], "%Y-%m-%d") if data['test_date'] else None
 
         # create upload first
         upload_data = {k: v for k, v in data.items() if k not in ['batches', 'candidates']}
@@ -79,7 +84,6 @@ class UploadDAO(BaseDAO):
         upload.batches = batches
         upload.candidates = candidates
         return upload
-
 
     def insert_upload(self, data: Dict):
         """Insert a single record into 'uploads' table from a provided data dict"""
