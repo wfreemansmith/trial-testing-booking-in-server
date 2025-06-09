@@ -53,8 +53,4 @@ class TestUnitUploadDAO:
         expected_candidate_ids = [f"{expected_upload_id}_{str(candidate['candidate_number']).zfill(4)}" for candidate in candidates]
         for expected_candidate_id in expected_candidate_ids:
             match = sum(candidate.candidate_id == expected_candidate_id for candidate in upload_object.candidates)
-            assert match == 1, f"Unique Candidate IDs not initalised correctly, expected '{expected_batch_id}' but test found {match} results with that name"
-
-
-
-    
+            assert match == 1, f"Unique Candidate IDs not initalised correctly, expected '{expected_batch_id}' but test found {match} results with that name"    
