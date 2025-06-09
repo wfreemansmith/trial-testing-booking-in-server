@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import date
 
@@ -8,7 +8,7 @@ class ErrorMessage(BaseModel):
     message: str = None
 
 class CandidateDict(BaseModel):
-    candidate_number: Optional[int]
+    candidate_number: Optional[int] = 0
     candidate_name: Optional[str]
     paper_sat: Optional[str]
     writing_version: Optional[str]
@@ -18,6 +18,10 @@ class CandidateDict(BaseModel):
     reading_version_id: Optional[str] = None
     listening_version_id: Optional[str] = None
     errors: List[ErrorMessage] = []
+
+    @field_validator("candidate_number", mode="before")
+    def none_to_zero(cls, v):
+        return 0 if v is None else v
 
 class BatchDict(BaseModel):
     version_id: str

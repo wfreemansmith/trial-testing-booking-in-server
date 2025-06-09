@@ -12,16 +12,16 @@ from datetime import date, datetime
 
 
 # create database connection
-engine = get_database()
-version_dao = VersionDAO(engine)
-candidate_dao = CandidateDAO(engine)
+session = get_database()
+version_dao = VersionDAO(session)
+candidate_dao = CandidateDAO(session)
 
 
 # constants
 VERSION_ID_COLS = ['reading_version_id', 'writing_version_id', 'listening_version_id']
 
 
-def validate_candidate(marking_window_id: int, centre_num: str, candidate: CandidateDict, position: int) -> List[ErrorMessage]:
+def validate_candidate(candidate: CandidateDict) -> List[ErrorMessage]:
     """Checks candidate dict against database, adjusts anything which can be adjusted, returns error messages if any error"""
     candidate_errors = []
 
@@ -41,24 +41,31 @@ def validate_candidate(marking_window_id: int, centre_num: str, candidate: Candi
             ErrorMessage(field="candidate_number", message="Candidate number cannot be blank or zero. Please provide a candidate number that you have not used previously.")
         )
 
-    if candidate.candidate_number and candidate.candidate_name:
-        # check database here
-        duplicate = candidate_dao.is_duplicate_candidate(marking_window_id, centre_num, [candidate.candidate_number, candidate.candidate_name])
-        if type(duplicate) is int:
-            candidate.candidate_number = duplicate + position
-            error = ErrorMessage(field="candidate_number", message="Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes.")
-            candidate_errors.append(error)
-        elif duplicate:
-            error = ErrorMessage(field="duplicate")
-            candidate_errors.append(error)
-
     return candidate_errors
+
+
+def check_for_duplicates(marking_window_id: int, centre_id: str, candidates_list: List[CandidateDict]) -> None:
+    """Checks for duplicates and makes any edits in place we can based on current database results"""
+    candidates_to_check = [[candidate.candidate_number, candidate.candidate_name] for candidate in candidates_list]
+    checked_candidates = candidate_dao.is_duplicate_candidate(marking_window_id, centre_id, candidates_to_check)
+    candidate_dao.close()
+    for i, result in enumerate(checked_candidates):
+        if type(result) is int:
+            candidates_list[i].candidate_number = result
+            candidates_list[i].errors.append(
+                ErrorMessage(field="candidate_number", message="Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes.")
+            )
+        elif result:
+            candidates_list[i].errors.append(
+                ErrorMessage(field="duplicate")
+            ) 
 
 
 def validate_version(version_id: str) -> List[ErrorMessage]:
     """Checks version id on database, logs it as problematic, and returns an error if any are found"""
     version_errors = []
     version_exists = version_dao.version_exists(version_id)
+    version_dao.close()
     if not version_exists:
         error = ErrorMessage(field="version_id", message=f"Version cannot be found on the database. Please check the version, update your candidates, and try again. If you believe this is an error, please contact Cambridge.")
         version_errors.append(error)
@@ -217,8 +224,10 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
         ]
     
     # check candidate numbers against database & for any in-list duplicates
-    for position, candidate in enumerate(candidates_list):
-        validate_candidate(marking_window_id, centre_id, candidate, position)
+    check_for_duplicates(marking_window_id, centre_id, candidates_list)
+
+    for candidate in candidates_list:
+        validate_candidate(candidate)
         for version_id_col in VERSION_ID_COLS:
             if getattr(candidate, version_id_col) in versions_not_found:
                 candidate.errors.append(
@@ -231,6 +240,7 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
             )
 
     # cleans candidate list of duplicates and adds to errors_list
+    candidates_list = sorted(candidates_list, key=lambda x: x.candidate_number)
     duplicate_count = sum(
         1
         for candidate in candidates_list
