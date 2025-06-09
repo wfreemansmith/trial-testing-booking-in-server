@@ -4,15 +4,14 @@ import pyodbc
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+DB_STRING = f"{SQL_DB}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+engine = create_engine(DB_STRING)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_database():
     """Returns an SQL alchemy database engine and session"""
-    DB_STRING = f"{SQL_DB}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    engine = create_engine(DB_STRING)
-    new_session = sessionmaker(bind=engine)
-    session = new_session()
-    return session, engine
-
+    session = SessionLocal()
+    return session
 
 
 def get_database_connection():

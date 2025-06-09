@@ -34,12 +34,14 @@ class CandidateDAO(BaseDAO):
         else:
             raise Exception("Wrong candidate type provided to 'is_duplicate_candidate'")
         
-        logger.debug(f"Checking marking window {marking_window_id}, centre '{centre_id}' for duplicate candidates...")
+        logger.debug(f"Checking {len(candidate_list)} candidates for duplicates in marking window {marking_window_id}, centre '{centre_id}'...")
         
         # get existing candidates from database
         existing_candidates = self.select_candidates_by_upload(marking_window_id, centre_id)
+        logger.debug(f"Existing candidates: {existing_candidates}")
         if not existing_candidates:
-            return [False * len(candidate_list)]
+            logger.debug(f"DAO returning {[False] * len(candidate_list)}")
+            return [False] * len(candidate_list)
 
         # finds the highest existing cand number in either the provided list or the db
         last_cand_num = max(
@@ -54,11 +56,14 @@ class CandidateDAO(BaseDAO):
 
         for candidate in candidate_list:
             if any(entry.candidate_number == candidate[0] and entry.candidate_name == candidate[1] for entry in existing_candidates):
+                # returns True if same candidate name & number are found in db
                 list_to_return.append(True)
             elif any(entry.candidate_number == candidate[0] and entry.candidate_name != candidate[1] for entry in existing_candidates):
+                # returns a new number if just the candidate number is duplicated
                 last_cand_num += 1
                 list_to_return.append(last_cand_num)
             else:
+                # returns false if not a duplicate
                 list_to_return.append(False)
             
         return list_to_return

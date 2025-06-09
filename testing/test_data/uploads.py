@@ -508,6 +508,20 @@ upload_preview_expected_res = [
                 ]
             },
             {
+                "candidate_number": 1,
+                "candidate_name": "David Muffin",
+                "paper_sat": "GT",
+                "writing_version": None,
+                "reading_version": "CP54",
+                "listening_version": None,
+                "errors": [
+                    {
+                        'field': 'candidate_number',
+                        'message': 'Candidate number cannot be duplicated, please use a unique candidate number.'
+                    }
+                ]
+            },
+            {
                 "candidate_number": 2,
                 "candidate_name": "Mary Bloggs",
                 "paper_sat": "AC",
@@ -527,20 +541,6 @@ upload_preview_expected_res = [
                     {
                         "field": "paper_sat",
                         "message": "Please enter 'AC' or 'GT' for this candidate."
-                    }
-                ]
-            },
-            {
-                "candidate_number": 1,
-                "candidate_name": "David Muffin",
-                "paper_sat": "GT",
-                "writing_version": None,
-                "reading_version": "CP54",
-                "listening_version": None,
-                "errors": [
-                    {
-                        'field': 'candidate_number',
-                        'message': 'Candidate number cannot be duplicated, please use a unique candidate number.'
                     }
                 ]
             }
@@ -839,6 +839,20 @@ upload_refresh_expected_responses = [
         ],
         "candidates": [
             {
+                "candidate_number": 0,
+                "candidate_name": "Alice White",
+                "paper_sat": "AC",
+                "writing_version": "IP1158",
+                "reading_version": "AP123",
+                "listening_version": "BP59",
+                "errors": [
+                    {
+                        "field": "candidate_number",
+                        "message": "Candidate number cannot be blank or zero. Please provide a candidate number that you have not used previously."
+                    }
+                ]
+            },
+            {
                 "candidate_number": 1,
                 "candidate_name": None,
                 "paper_sat": "AC",
@@ -863,20 +877,6 @@ upload_refresh_expected_responses = [
                     {
                         "field": "candidate_name",
                         "message": "Candidate name cannot be blank. Please provide a name for the candidate."
-                    }
-                ]
-            },
-            {
-                "candidate_number": None,
-                "candidate_name": "Alice White",
-                "paper_sat": "AC",
-                "writing_version": "IP1158",
-                "reading_version": "AP123",
-                "listening_version": "BP59",
-                "errors": [
-                    {
-                        "field": "candidate_number",
-                        "message": "Candidate number cannot be blank or zero. Please provide a candidate number that you have not used previously."
                     }
                 ]
             }

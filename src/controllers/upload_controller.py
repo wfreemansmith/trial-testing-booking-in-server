@@ -32,9 +32,6 @@ def check(data: UploadData, check_file_upload: bool = False) -> Dict[str, List[d
         test_date=data.test_date,
         check_file_upload=check_file_upload
         )
-    
-    print("PRINT!!!")
-    print(checked_batches_list)
 
     return {
         "candidates": checked_candidates_list,
@@ -47,6 +44,6 @@ def submit(data: dict):
     # additional step of checking that files have been uploaded - add to errors if not
     # check dict with check()
     # if results have any errors, return errors
-    engine = get_database()
-    dao = UploadDAO(engine)
+    session = get_database()
+    dao = UploadDAO(session)
     dao.insert_upload(data)

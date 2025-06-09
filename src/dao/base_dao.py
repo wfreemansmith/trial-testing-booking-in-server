@@ -1,7 +1,11 @@
 from sqlalchemy import select, and_
+from src.db import SessionLocal
 
 class BaseDAO():
     def __init__(self, session):
+        # if session is None:
+        #     self.session = SessionLocal()
+        #     self._owns_session = True
         self.session = session
         self.model = None
 
