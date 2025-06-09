@@ -3,7 +3,7 @@
 # import pytest
 # import json
 
-# ## Refactor so these tests are testing the individual functions
+## Refactor so these tests are testing the individual functions
 
 # TEST_REGISTER_LOCATION = "./testing/test_documents/"
 # PROCESS_REGISTER_FILE_TEST_DATA = [
