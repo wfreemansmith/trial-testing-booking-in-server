@@ -5,14 +5,15 @@ on: [push, workflow_dispatch]
 jobs:
   DockerTest:
     runs-on: ubuntu-latest
+    environment: testing
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Create .env for testing
         run: echo "${{ secrets.ENV_TESTING_CONTENTS }}" > .env.testing
       - name: Build containers
-        run: APP_ENV=testing docker compose build
+        run: docker compose build
       - name: Run tests in containers
-        run: APP_ENV=testing docker compose run --rm tests
+        run: docker compose run --rm tests
       - name: Shutdown containers
-        run: APP_ENV=testing docker compose down -v
+        run: docker compose down -v
