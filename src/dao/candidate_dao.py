@@ -38,9 +38,7 @@ class CandidateDAO(BaseDAO):
         
         # get existing candidates from database
         existing_candidates = self.select_candidates_by_upload(marking_window_id, centre_id)
-        logger.debug(f"Existing candidates: {existing_candidates}")
         if not existing_candidates:
-            logger.debug(f"DAO returning {[False] * len(candidate_list)}")
             return [False] * len(candidate_list)
 
         # finds the highest existing cand number in either the provided list or the db
