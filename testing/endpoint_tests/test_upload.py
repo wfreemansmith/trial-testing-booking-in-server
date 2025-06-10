@@ -66,8 +66,20 @@ class TestUploadPreview:
         assert content['data']['errors'] == expected_errors, (
             "Expected errors were not returned"
         )
-
-    async def test_preview_duplicates_POST_200(self, db_session, async_client):
+    
+    DUPLICATE_TEST_CASES = [
+        (
+            f"{entry.get('filename')}.xlsx",
+            entry.get('centre_id'),
+            entry.get('marking_window_id'),
+            copy.deepcopy(complete_upload_json[i]),
+            copy.deepcopy(entry)
+        )
+        for i, entry in enumerate(duplicate_response)
+    ]
+    DUPLICATE_TEST_IDS = [entry.get('TEST_ID') for entry in duplicate_response]
+    @pytest.mark.parametrize("filename, centre_id, marking_window_id, data_to_preload, expected_data", DUPLICATE_TEST_CASES, ids=DUPLICATE_TEST_IDS)
+    async def test_preview_duplicates_POST_200(self, db_session, async_client, filename, centre_id, marking_window_id, data_to_preload, expected_data):
         """
         POST upload/preview 200:
         Tests for duplicates
@@ -75,20 +87,13 @@ class TestUploadPreview:
         upload_dao = UploadDAO(session=db_session)
 
         # ARRANGE
-        data_to_preload = copy.deepcopy(complete_upload_json[0])
-        
-        expected_data = duplicate_response[0]
-        filename = f"{expected_data.get('filename')}.xlsx"
-        centre_id = expected_data.get('centre_id')
-        print(filename)
         filepath = os.path.join(TEST_REGISTER_LOCATION, filename)
-        print(filepath)
         formdata = {
             "token": "dummy-token",
             "data": json.dumps(
                 {
                     "centre_id": centre_id,
-                    "marking_window_id": 1
+                    "marking_window_id": marking_window_id
                     }
                 )
             }
@@ -110,6 +115,10 @@ class TestUploadPreview:
 
         assert content['data']['errors'] == expected_data['errors'], (
             "Expected errors were not returned"
+        )
+        
+        assert content['data']['batches'] == expected_data['batches'], (
+            "Expected batches were not correctly returned"
         )
 
     # POST unsupported media type e.g. .pdf, .doc

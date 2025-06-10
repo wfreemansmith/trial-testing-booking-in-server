@@ -1,10 +1,11 @@
 from src.db import get_database
-from src.utils import serialise_pydantic_list
+from src.utils import serialise_pydantic_list, format_version_id
 from src.errors import FileProcessingError
 from typing import TypedDict, BinaryIO, List, Tuple
 from src.schemas.upload_schema import CandidateDict, ErrorMessage, BatchDict
 from io import BytesIO
 from src.dao import CandidateDAO, VersionDAO
+from src.logger import logger
 import pandas as pd
 import numpy as np
 from pandas import DataFrame
@@ -213,12 +214,6 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
                 batch.errors.append(
                     ErrorMessage(field="file_uploads", message="Please upload a file.")
                 )
-
-    # cleans batch list of non-existent batches
-    filtered_batches_list = [
-        batch for batch in batches_list
-        if not any(error.field == "batches" for error in batch.errors)
-        ]
     
     # check candidate numbers against database & for any in-list duplicates
     check_for_duplicates(marking_window_id, centre_id, candidates_list)
@@ -258,6 +253,19 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
         errors_list.append(
             ErrorMessage(field="candidates", message="These candidates have already been uploaded to us.")
         )
+
+    # cleans batch list of any versions which have been removed
+    still_standing_versions = set()
+    for version_col_id in VERSION_ID_COLS:
+        for candidate in filtered_candidates_list:
+            version_id = format_version_id(paper=candidate.paper_sat, component=version_col_id[0], version=getattr(candidate, version_col_id[:-3]))
+            still_standing_versions.add(version_id)
+
+    # clean batches list
+    filtered_batches_list = [
+        batch for batch in batches_list
+        if not any(error.field == "batches" for error in batch.errors)
+        and batch.version_id in still_standing_versions]
 
     # add global errors
     if any(candidate.errors for candidate in filtered_candidates_list
