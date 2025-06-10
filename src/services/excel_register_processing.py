@@ -20,7 +20,6 @@ candidate_dao = CandidateDAO(session)
 # constants
 VERSION_ID_COLS = ['reading_version_id', 'writing_version_id', 'listening_version_id']
 
-
 def validate_candidate(candidate: CandidateDict) -> List[ErrorMessage]:
     """Checks candidate dict against database, adjusts anything which can be adjusted, returns error messages if any error"""
     candidate_errors = []
@@ -61,16 +60,14 @@ def check_for_duplicates(marking_window_id: int, centre_id: str, candidates_list
             ) 
 
 
-def validate_version(version_id: str) -> List[ErrorMessage]:
+def validate_version(batch: BatchDict) -> List[ErrorMessage]:
     """Checks version id on database, logs it as problematic, and returns an error if any are found"""
-    version_errors = []
-    version_exists = version_dao.version_exists(version_id)
+    version_exists = version_dao.version_exists(batch.version_id)
     version_dao.close()
     if not version_exists:
-        error = ErrorMessage(field="version_id", message=f"Version cannot be found on the database. Please check the version, update your candidates, and try again. If you believe this is an error, please contact Cambridge.")
-        version_errors.append(error)
-
-    return version_errors
+        batch.errors.append(
+            ErrorMessage(field="batches", message=f"One or more versions cannot be found on the database. Please check the version, update your candidates, and try again. If you believe this is an error, please contact Cambridge.")
+        )
 
 
 # df helper functions
@@ -207,10 +204,10 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
 
     # check version_id against database and file upload
     for batch in batches_list:
-        version_errors = validate_version(batch.version_id)
-        if version_errors:
+        validate_version(batch)
+        if batch.errors:
             versions_not_found.add(batch.version_id)
-            errors_list.extend(version_errors)
+            errors_list.extend(batch.errors)
         if check_file_upload:
             if not batch.file_uploads:
                 batch.errors.append(
@@ -220,7 +217,7 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
     # cleans batch list of non-existent batches
     filtered_batches_list = [
         batch for batch in batches_list
-        if not any(error.field == "version_id" for error in batch.errors)
+        if not any(error.field == "batches" for error in batch.errors)
         ]
     
     # check candidate numbers against database & for any in-list duplicates
@@ -231,7 +228,7 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
         for version_id_col in VERSION_ID_COLS:
             if getattr(candidate, version_id_col) in versions_not_found:
                 candidate.errors.append(
-                    ErrorMessage(field=version_id_col, message="This version could not be found on the database, please double check")
+                    ErrorMessage(field=version_id_col[:-3], message="This version could not be found on the database, please double check.")
                 )
         
         if [c.candidate_number for c in candidates_list].count(candidate.candidate_number) > 1:
@@ -263,7 +260,8 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
         )
 
     # add global errors
-    if any(candidate.errors for candidate in filtered_candidates_list):
+    if any(candidate.errors for candidate in filtered_candidates_list
+           if not any("version" in error.field for error in candidate.errors)):
         errors_list.append(
             ErrorMessage(field="candidates", message="There was an error with one or more candidates.")
         )

@@ -551,6 +551,74 @@ upload_preview_expected_res = [
                 "message": "There was an error with one or more candidates."
             }
         ]
+    },
+    {
+        "filename": "test_register_7",
+        "centre_id": "3243",
+        "batches": [
+            {
+                "version_id": "ACWIP1157",
+                "component_id": "W",
+                "file_uploads": [],
+                "errors": []
+            },
+            {
+                "version_id": "LBP59",
+                "component_id": "L",
+                "file_uploads": [],
+                "errors": []
+            }
+        ],
+        "candidates": [
+            {
+                "candidate_number": 1,
+                "candidate_name": "Mary Bloggs",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "FM999",
+                "listening_version": "BP59",
+                "errors": [
+                    {
+                        "field": "reading_version",
+                        "message": "This version could not be found on the database, please double check."
+                    }
+                ]
+            },
+            {
+                "candidate_number": 2,
+                "candidate_name": "Joe Santiago",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "FM999",
+                "listening_version": "BP59",
+                "errors": [
+                    {
+                        "field": "reading_version",
+                        "message": "This version could not be found on the database, please double check."
+                    }
+                ]
+            },
+            {
+                "candidate_number": 3,
+                "candidate_name": "Alice White",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "FM999",
+                "listening_version": "BP59",
+                "errors": [
+                    {
+                        "field": "reading_version",
+                        "message": "This version could not be found on the database, please double check."
+                    }
+                ]
+            }
+        ],
+        "errors": [
+            {
+                "field": "batches",
+                "message": "One or more versions cannot be found on the database. Please check the version, update your candidates, and try again. If you believe this is an error, please contact Cambridge."
+            }
+        ]
     }
 ]
 
@@ -1212,3 +1280,66 @@ complete_upload_json = [
         ]
     }
 ]
+
+# expected response for uploading duplicates
+duplicate_response = [
+    {
+        "filename": "test_register_1",
+        "centre_id": "3243",
+        "batches": [
+            {
+                "version_id": "ACRAP123",
+                "component_id": "R",
+                "file_uploads": [],
+                "errors": []
+            },
+            {
+                "version_id": "ACWIP1157",
+                "component_id": "W",
+                "file_uploads": [],
+                "errors": []
+            },
+            {
+                "version_id": "ACWIP1158",
+                "component_id": "W",
+                "file_uploads": [],
+                "errors": []
+            },
+            {
+                "version_id": "LBP59",
+                "component_id": "L",
+                "file_uploads": [],
+                "errors": []
+            }
+        ],
+        "candidates": [
+            {
+                "candidate_number": 1,
+                "candidate_name": "Mary Bloggs",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59",
+                "errors": []
+            },
+            {
+                "candidate_number": 2,
+                "candidate_name": "Joe Santiago",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59",
+                "errors": []
+            },
+            {
+                "candidate_number": 3,
+                "candidate_name": "Alice White",
+                "paper_sat": "AC",
+                "writing_version": "IP1158",
+                "reading_version": "AP123",
+                "listening_version": "BP59",
+                "errors": []
+            }
+        ],
+        "errors": []
+    }]

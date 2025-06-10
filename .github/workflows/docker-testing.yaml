@@ -1,0 +1,18 @@
+name: Docker Testing
+
+on: [push, workflow_dispatch]
+
+jobs:
+  DockerTest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create .env for testing
+        run: echo "${{ secrets.ENV_TESTING_CONTENTS }}" > .env.testing
+      - name: Build containers
+        run: docker-compose build
+      - name: Run tests in containers
+        run: APP_ENV=testing docker-compose run -rm tests
+      - name: Shutdown containers
+        run: docker-compose down -v

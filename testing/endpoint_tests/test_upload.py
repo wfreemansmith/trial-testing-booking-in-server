@@ -1,12 +1,15 @@
 import pytest
 import os
-from testing.test_data.uploads import upload_preview_expected_res, upload_refresh_inputs, upload_refresh_expected_responses
+from testing.test_data.uploads import upload_preview_expected_res, upload_refresh_inputs, upload_refresh_expected_responses, complete_upload_json, duplicate_response
+from src.dao import UploadDAO
 import json
+import copy
 
 
 TEST_REGISTER_LOCATION = "./testing/test_documents/"
 
 class TestUploadPreview:
+    # POST happy paths
     PREVIEW_TEST_DATA = [
         (f"{entry.get('filename')}.xlsx",
         entry.get('centre_id'),
@@ -23,7 +26,7 @@ class TestUploadPreview:
             "filename, centre_id, expected_candidates, expected_batches, expected_errors",
             PREVIEW_TEST_DATA,
             ids=PREVIEW_TEST_IDS)
-    async def test_preview_POST_200(self, async_client, filename, centre_id, expected_candidates, expected_batches, expected_errors):
+    async def test_preview_POST_200(self, db_session, async_client, filename, centre_id, expected_candidates, expected_batches, expected_errors):
         """
         POST upload/preview 200:
         Tests happy endpoints, successful upload of Excel sheet. Includes both with no errors and with expected errors
@@ -64,6 +67,51 @@ class TestUploadPreview:
             "Expected errors were not returned"
         )
 
+    async def test_preview_duplicates_POST_200(self, db_session, async_client):
+        """
+        POST upload/preview 200:
+        Tests for duplicates
+        """
+        upload_dao = UploadDAO(session=db_session)
+
+        # ARRANGE
+        data_to_preload = copy.deepcopy(complete_upload_json[0])
+        
+        expected_data = duplicate_response[0]
+        filename = f"{expected_data.get('filename')}.xlsx"
+        centre_id = expected_data.get('centre_id')
+        print(filename)
+        filepath = os.path.join(TEST_REGISTER_LOCATION, filename)
+        print(filepath)
+        formdata = {
+            "token": "dummy-token",
+            "data": json.dumps(
+                {
+                    "centre_id": centre_id,
+                    "marking_window_id": 1
+                    }
+                )
+            }
+        files = {"file": (filename, open(filepath, "rb"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+        
+        ## ACT
+        upload_dao.insert_upload(data=data_to_preload)
+        response = await async_client.post("/upload/preview", data=formdata, files=files)
+        content = response.json()
+
+        # ASSERT
+        assert response.status_code == 200, (
+            f"Expected 200, received {response.status_code} with error message '{content['message']}'"
+        )
+
+        assert content['data']['candidates'] == expected_data['candidates'], (
+            "Expected candidates were not correctly returned"
+        )
+
+        assert content['data']['errors'] == expected_data['errors'], (
+            "Expected errors were not returned"
+        )
+
     # POST unsupported media type e.g. .pdf, .doc
     @pytest.mark.parametrize(
             "filename, ext, mime_type",
@@ -97,9 +145,6 @@ class TestUploadPreview:
         response = await async_client.post("/upload/preview", data=formdata, files=files)
         content = response.json()
 
-        print(response.status_code)
-        print(content['message'])
-
         ## ASSERT
         assert response.status_code == 415, (
             f"Expected status 415, recevied {response.status_code}"
@@ -128,7 +173,7 @@ class TestUploadPreview:
             "Missing both centre_id and marking_window_id"
         ]
     )
-    async def test_preview_POST_400_data(self, async_client, filename, centre_id, marking_window_id):
+    async def test_preview_POST_400_data(self, db_session, async_client, filename, centre_id, marking_window_id):
         """
         POST upload/preview 400
         Tests submissions of missing data
@@ -171,7 +216,7 @@ class TestUploadPreview:
                 ("test_register_totally_wrong")
             ]
     )
-    async def test_preview_POST_400_file(self, async_client, filename):
+    async def test_preview_POST_400_file(self, db_session, async_client, filename):
         """
         POST upload/preview 400:
         Tests upload of incorrectly formatted Excel sheets
@@ -205,7 +250,7 @@ class TestUploadPreview:
         )
 
         # Add more tests:
-        # For versions not found, for candidates already on the database
+        # for candidates already on the database
 
 class TestUploadRefresh:
     REFRESH_TEST_IDS = [
