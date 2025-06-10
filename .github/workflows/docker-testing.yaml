@@ -12,8 +12,8 @@ jobs:
       - name: Create .env for testing
         run: echo "${{ secrets.ENV_TESTING_CONTENTS }}" > .env.testing
       - name: Build containers
-        run: docker compose build
+        run: APP_ENV=testing docker compose build
       - name: Run tests in containers
-        run: docker compose run --rm tests
+        run: APP_ENV=testing docker compose run --rm tests
       - name: Shutdown containers
-        run: docker compose down -v
+        run: APP_ENV=testing docker compose down -v
