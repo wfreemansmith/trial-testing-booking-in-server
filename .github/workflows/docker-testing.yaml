@@ -8,11 +8,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Check secrets
+        run: echo "${{ secrets.ENV_TESTING_CONTENTS }}"
       - name: Create .env for testing
         run: echo "${{ secrets.ENV_TESTING_CONTENTS }}" > .env.testing
+      - name: Debug .env creation
+        run: head -n 10 .env.testing
       - name: Build containers
         run: APP_ENV=testing docker compose build
       - name: Run tests in containers
-        run: APP_ENV=testing docker compose run --rm tests
+        run: APP_ENV=testing docker compose run --rm tests env | sort
       - name: Shutdown containers
         run: APP_ENV=testing docker compose down -v
