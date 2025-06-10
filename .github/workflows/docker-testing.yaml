@@ -17,8 +17,8 @@ jobs:
           docker --version
           docker compose --version
       - name: Build containers
-        run: docker-compose build
+        run: docker compose build
       - name: Run tests in containers
-        run: docker-compose run --rm tests
+        run: docker compose run --rm tests
       - name: Shutdown containers
-        run: docker-compose down -v
+        run: docker compose down -v
