@@ -14,6 +14,6 @@ jobs:
       - name: Build containers
         run: APP_ENV=testing docker compose build
       - name: Run tests in containers
-        run: APP_ENV=testing docker compose run --rm tests -vv
+        run: APP_ENV=testing docker compose run --rm tests pytest -vv
       - name: Shutdown containers
         run: APP_ENV=testing docker compose down -v
