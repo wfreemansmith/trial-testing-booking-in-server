@@ -1278,14 +1278,108 @@ complete_upload_json = [
                 "listening_version": "BP59"
             }
         ]
+    },
+        {
+        "marking_window_id": 1,
+        "centre_id": "3243",
+        "epd_number": None,
+        "test_date": "2025-04-10",
+        "batches": [
+            {
+                "version_id": "ACRAP123",
+                "component_id": "R",
+                "file_uploads": [
+                    {
+                        "file_name": "READING_SCANS_AP123.pdf"
+                    }
+                ]
+            },
+            {
+                "version_id": "ACWIP1157",
+                "component_id": "W",
+                "file_uploads": [
+                    {
+                        "file_name": "WRITING_SCANS_IP1157.pdf"
+                    }
+                ]
+            },
+            {
+                "version_id": "ACWIP1158",
+                "component_id": "W",
+                "file_uploads": [
+                    {
+                        "file_name": "WRITING_SCANS_IP1158.pdf"
+                    }
+                ]
+            },
+            {
+                "version_id": "LBP59",
+                "component_id": "L",
+                "file_uploads": [
+                    {
+                        "file_name": "LISTENING_SCANS_BP59.pdf"
+                    }
+                ] 
+            }
+        ],
+        "candidates": [
+            {
+                "candidate_number": 1,
+                "candidate_name": "Not Mary",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 2,
+                "candidate_name": "Not Joe",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 3,
+                "candidate_name": "Not Alice",
+                "paper_sat": "AC",
+                "writing_version": "IP1158",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 4,
+                "candidate_name": "Some other bloke",
+                "paper_sat": "AC",
+                "writing_version": "IP1158",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            }
+        ]
     }
 ]
 
 # expected response for uploading duplicates
 duplicate_response = [
     {
+        "TEST_ID": "All candidates duplicates",
         "filename": "test_register_1",
         "centre_id": "3243",
+        "marking_window_id": 1,
+        "batches": [],
+        "candidates": [],
+        "errors": [
+            {
+                "field": "candidates",
+                "message": "These candidates have already been uploaded to us."
+            }
+        ]
+    },
+    {
+        "TEST_ID": "All candidate numbers duplicates",
+        "filename": "test_register_1",
+        "centre_id": "3243",
+        "marking_window_id": 1,
         "batches": [
             {
                 "version_id": "ACRAP123",
@@ -1314,32 +1408,53 @@ duplicate_response = [
         ],
         "candidates": [
             {
-                "candidate_number": 1,
+                "candidate_number": 5,
                 "candidate_name": "Mary Bloggs",
                 "paper_sat": "AC",
                 "writing_version": "IP1157",
                 "reading_version": "AP123",
                 "listening_version": "BP59",
-                "errors": []
+                "errors": [
+                    {
+                        "field": "candidate_number",
+                        "message": "Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes."
+                    }
+                ]
             },
             {
-                "candidate_number": 2,
+                "candidate_number": 6,
                 "candidate_name": "Joe Santiago",
                 "paper_sat": "AC",
                 "writing_version": "IP1157",
                 "reading_version": "AP123",
                 "listening_version": "BP59",
-                "errors": []
+                "errors": [
+                    {
+                        "field": "candidate_number",
+                        "message": "Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes."
+                    }
+                ]
             },
             {
-                "candidate_number": 3,
+                "candidate_number": 7,
                 "candidate_name": "Alice White",
                 "paper_sat": "AC",
                 "writing_version": "IP1158",
                 "reading_version": "AP123",
                 "listening_version": "BP59",
-                "errors": []
+                "errors": [
+                    {
+                        "field": "candidate_number",
+                        "message": "Candidate number was already found in our records. We have updated duplicate candidate numbers on your register. Please amend your test materials before scanning and uploading to reflect these changes."
+                    }
+                ]
             }
         ],
-        "errors": []
-    }]
+        "errors": [
+            {
+                "field": "candidates",
+                "message": "There was an error with one or more candidates."
+            }
+        ]
+    }
+]
