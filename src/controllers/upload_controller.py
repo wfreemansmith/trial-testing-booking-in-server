@@ -1,8 +1,9 @@
 from src.services.excel_register_processing import ingest_excel_file, check_lists
+from src.services.file_handling import get_folder_name, get_file_name
 from typing import List, BinaryIO, Dict
 from src.db import get_database
 from src.dao import UploadDAO
-from src.schemas.upload_schema import UploadData
+from src.schemas.upload_schema import UploadData, BatchDict, CandidateDict
 
 
 ## NOTE: edit this, it may that as a controller we need to update what it returns
@@ -21,6 +22,15 @@ def preview(centre_id: str, marking_window_id: int, file: BinaryIO) -> Dict[str,
         "batches": checked_batches_list,
         "errors": error_list
         }
+
+def upload_file(centre_id: str, marking_window_id: int, batch: BatchDict, candidates: List[CandidateDict], file: BinaryIO):
+    """Uploads single file to Files.com"""
+    # construct file names
+    folder_name = get_folder_name(centre_id=centre_id, marking_window_id=marking_window_id)
+    file_name = get_file_name(centre_id=centre_id, batch=batch, candidates=candidates)
+
+    
+
 
 def check(data: UploadData, check_file_upload: bool = False) -> Dict[str, List[dict]]:
     """Checks user inputted data and returns updated data and list of errors"""

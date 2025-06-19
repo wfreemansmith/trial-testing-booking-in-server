@@ -5,6 +5,8 @@ from src.dao.base_dao import BaseDAO
 from src.dao.candidate_dao import CandidateDAO
 from src.dao.upload_dao import UploadDAO
 from src.dao.version_dao import VersionDAO
+from src.dao.centre_dao import CentreDAO
+from src.dao.marking_window_dao import MarkingWindowDAO
 
 ## NB probably replace this all with SQLalchemy eventually
 
