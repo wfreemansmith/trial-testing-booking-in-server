@@ -47,9 +47,22 @@ def refresh_data(payload: UploadPayload):
 
 @router.post("/file_upload")
 @api_response()
-def file_upload(token: str, data: dict, file: UploadFile):
+async def file_upload(
+    token: str = Form(...),
+    data: str = Form(...),
+    file: UploadFile = File(...)):
     """Upload scanned materials to files.com"""
-    print("")
+    parsed_data = parse_preview_data(json.loads(data))
+
+    if file.filename.endswith('.pdf'):
+        file_bytes = await file.read()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"File type .{file.filename.split(".")[-1]} not supported"
+        )
+    
+    upload_controller.upload_file(centre_id=parsed_data.centre_id, marking_window_id=parsed_data.marking_window_id, file=file_bytes)
 
 
 @router.post("/submit")

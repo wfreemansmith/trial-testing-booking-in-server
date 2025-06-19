@@ -1,9 +1,6 @@
 from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, validates, declarative_base, reconstructor
-from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import event
-from src.logger import logger
 
 Base = declarative_base()
 

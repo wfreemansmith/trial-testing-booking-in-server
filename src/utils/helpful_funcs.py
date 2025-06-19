@@ -11,8 +11,15 @@ def format_version_id(paper: str, component: str, version: str) -> str:
 
 def construct_upload_path(window: str, partner: str, centre_number: str) -> str:
     """Returns full upload destination as required by Files.com"""
-    from config import FILE_UPLOAD_BASE_URL
-    return f"{FILE_UPLOAD_BASE_URL}/{window}/{partner}/{centre_number}/"
+    from src.config import FILE_UPLOAD_BASE_URL
+    return url_contructor(FILE_UPLOAD_BASE_URL, f"IELTS Trial Testing {window}", partner, centre_number)
+
+def construct_upload_filename(centre_id: str, version_id: str, lowest_cand: int, highest_cand: int, num_of_cands: int):
+    """
+    Returns filename in agreed naming convention:
+    Pretest Centre Number_Version_Candidate Range_Number of Candidates
+    """
+    return f"{centre_id}_{version_id}_{str(lowest_cand).zfill(4)}-{str(highest_cand).zfill(4)}_{num_of_cands}"
 
 def message_editor(message: str, **kwargs) -> str:
     """Accepts message and keyword arguments, replaces keywords in message with values of argument"""

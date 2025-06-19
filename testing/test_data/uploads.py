@@ -65,6 +65,15 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_2",
         "centre_id": "3243",
+        "expected_filenames": {
+            "ACRAP123": "3243_ACRAP123_0001-0008_4",
+            "ACWIP1157": "3243_ACWIP1157_0001-0002_2",
+            "ACWIP1158": "3243_ACWIP1158_0003-0008_2",
+            "GTRCP54": "3243_GTRCP54_0004-0006_3",
+            "GTWAP476": "3243_GTWAP476_0005-0006_2",
+            "LBP23": "3243_LBP23_0005_1",
+            "LBP59": "3243_LBP59_0001-0008_5"
+        },
         "batches": [
             {
                 "version_id": "ACRAP123",
@@ -161,7 +170,7 @@ upload_preview_expected_res = [
                 "paper_sat": "GT",
                 "writing_version": "AP476",
                 "reading_version": "CP54",
-                "listening_version": "BP23",
+                "listening_version": "BP59",
                 "errors": []
             },
             {
