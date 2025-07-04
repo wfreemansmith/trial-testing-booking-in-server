@@ -594,6 +594,21 @@ class FileUpload(Base):
     batch = relationship('Batch', back_populates='file_uploads')
 
 
+class StagedFile(Base):
+    __tablename__ = 'staged_files'
+    
+    # generated fields
+    file_id = Column(Integer, primary_key=True, autoincrement=True)
+    upload_date = Column(Date, server_default=func.now())
+    # inputted fields
+    centre_id = Column(String, nullable=False)
+    marking_window_id = Column(Integer, nullable=False)
+    version_id = Column(String, nullable=False)
+    destination_filename = Column(String, nullable=False)
+    destination_folder = Column(String, nullable=False)
+    temp_path = Column(String, nullable=False)
+
+
 def get_model_by_tablename(tablename: str):
     """Uses table name to return the relevant ORM model class"""
     for mapper in Base.registry.mappers:

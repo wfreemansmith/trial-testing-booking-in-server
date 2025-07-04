@@ -2,8 +2,9 @@ from src.services.excel_register_processing import ingest_excel_file, check_list
 from src.services.file_handling import get_folder_name, get_file_name
 from typing import List, BinaryIO, Dict
 from src.db import get_database
-from src.dao import UploadDAO
+from src.dao import UploadDAO, StagedFileDAO
 from src.schemas.upload_schema import UploadData, BatchDict, CandidateDict
+import urllib.parse
 
 
 ## NOTE: edit this, it may that as a controller we need to update what it returns
@@ -23,14 +24,25 @@ def preview(centre_id: str, marking_window_id: int, file: BinaryIO) -> Dict[str,
         "errors": error_list
         }
 
-def upload_file(centre_id: str, marking_window_id: int, batch: BatchDict, candidates: List[CandidateDict], file: BinaryIO):
-    """Uploads single file to Files.com"""
+def stage_file(centre_id: str, marking_window_id: int, batch: BatchDict, candidates: List[CandidateDict], temp_path: str):
+    """Gets information from database for temporary file"""
     # construct file names
-    folder_name = get_folder_name(centre_id=centre_id, marking_window_id=marking_window_id)
-    file_name = get_file_name(centre_id=centre_id, batch=batch, candidates=candidates)
+    component_dict = {'R': 'reading', 'W': 'writing', 'L': 'listening'}
+    component = component_dict[batch.component_id]
+    centre_folder_name = get_folder_name(centre_id=centre_id, marking_window_id=marking_window_id)
+    destination_filename = get_file_name(centre_id=centre_id, batch=batch, candidates=candidates, component=component)
+    destination_folder = urllib.parse.urljoin(centre_folder_name, component.capitalize())
 
-    
+    # add to staged table
+    session = get_database()
+    stage_dao = StagedFileDAO(session)
+    stage_dao.stage_file(centre_id, marking_window_id, batch.version_id, destination_filename, destination_folder, temp_path)
+    stage_dao.close()
 
+    # returns dict
+    return {
+        "filename": destination_filename
+    }
 
 def check(data: UploadData, check_file_upload: bool = False) -> Dict[str, List[dict]]:
     """Checks user inputted data and returns updated data and list of errors"""

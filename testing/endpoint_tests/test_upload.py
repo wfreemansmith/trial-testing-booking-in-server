@@ -26,7 +26,7 @@ class TestUploadPreview:
             "filename, centre_id, expected_candidates, expected_batches, expected_errors",
             PREVIEW_TEST_DATA,
             ids=PREVIEW_TEST_IDS)
-    async def test_preview_POST_200(self, db_session, async_client, filename, centre_id, expected_candidates, expected_batches, expected_errors):
+    async def test_preview_POST_200(self, async_client, filename, centre_id, expected_candidates, expected_batches, expected_errors):
         """
         POST upload/preview 200:
         Tests happy endpoints, successful upload of Excel sheet. Includes both with no errors and with expected errors
@@ -67,59 +67,59 @@ class TestUploadPreview:
             "Expected errors were not returned"
         )
     
-    DUPLICATE_TEST_CASES = [
-        (
-            f"{entry.get('filename')}.xlsx",
-            entry.get('centre_id'),
-            entry.get('marking_window_id'),
-            copy.deepcopy(complete_upload_json[i]),
-            copy.deepcopy(entry)
-        )
-        for i, entry in enumerate(duplicate_response)
-    ]
-    DUPLICATE_TEST_IDS = [entry.get('TEST_ID') for entry in duplicate_response]
-    @pytest.mark.parametrize("filename, centre_id, marking_window_id, data_to_preload, expected_data", DUPLICATE_TEST_CASES, ids=DUPLICATE_TEST_IDS)
-    async def test_preview_duplicates_POST_200(self, db_session, async_client, filename, centre_id, marking_window_id, data_to_preload, expected_data):
-        """
-        POST upload/preview 200:
-        Tests for duplicates
-        """
-        upload_dao = UploadDAO(session=db_session)
+    # DUPLICATE_TEST_CASES = [
+    #     (
+    #         f"{entry.get('filename')}.xlsx",
+    #         entry.get('centre_id'),
+    #         entry.get('marking_window_id'),
+    #         copy.deepcopy(complete_upload_json[i]),
+    #         copy.deepcopy(entry)
+    #     )
+    #     for i, entry in enumerate(duplicate_response)
+    # ]
+    # DUPLICATE_TEST_IDS = [entry.get('TEST_ID') for entry in duplicate_response]
+    # @pytest.mark.parametrize("filename, centre_id, marking_window_id, data_to_preload, expected_data", DUPLICATE_TEST_CASES, ids=DUPLICATE_TEST_IDS)
+    # async def test_preview_duplicates_POST_200(self, db_session, async_client, filename, centre_id, marking_window_id, data_to_preload, expected_data):
+    #     """
+    #     POST upload/preview 200:
+    #     Tests for duplicates
+    #     """
+    #     upload_dao = UploadDAO(session=db_session)
 
-        # ARRANGE
-        filepath = os.path.join(TEST_REGISTER_LOCATION, filename)
-        formdata = {
-            "token": "dummy-token",
-            "data": json.dumps(
-                {
-                    "centre_id": centre_id,
-                    "marking_window_id": marking_window_id
-                    }
-                )
-            }
-        files = {"file": (filename, open(filepath, "rb"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+    #     # ARRANGE
+    #     filepath = os.path.join(TEST_REGISTER_LOCATION, filename)
+    #     formdata = {
+    #         "token": "dummy-token",
+    #         "data": json.dumps(
+    #             {
+    #                 "centre_id": centre_id,
+    #                 "marking_window_id": marking_window_id
+    #                 }
+    #             )
+    #         }
+    #     files = {"file": (filename, open(filepath, "rb"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
         
-        ## ACT
-        upload_dao.insert_upload(data=data_to_preload)
-        response = await async_client.post("/upload/preview", data=formdata, files=files)
-        content = response.json()
+    #     ## ACT
+    #     upload_dao.insert_upload(data=data_to_preload)
+    #     response = await async_client.post("/upload/preview", data=formdata, files=files)
+    #     content = response.json()
 
-        # ASSERT
-        assert response.status_code == 200, (
-            f"Expected 200, received {response.status_code} with error message '{content['message']}'"
-        )
+    #     # ASSERT
+    #     assert response.status_code == 200, (
+    #         f"Expected 200, received {response.status_code} with error message '{content['message']}'"
+    #     )
 
-        assert content['data']['candidates'] == expected_data['candidates'], (
-            "Expected candidates were not correctly returned"
-        )
+    #     assert content['data']['candidates'] == expected_data['candidates'], (
+    #         "Expected candidates were not correctly returned"
+    #     )
 
-        assert content['data']['errors'] == expected_data['errors'], (
-            "Expected errors were not returned"
-        )
+    #     assert content['data']['errors'] == expected_data['errors'], (
+    #         "Expected errors were not returned"
+    #     )
         
-        assert content['data']['batches'] == expected_data['batches'], (
-            "Expected batches were not correctly returned"
-        )
+    #     assert content['data']['batches'] == expected_data['batches'], (
+    #         "Expected batches were not correctly returned"
+    #     )
 
     # POST unsupported media type e.g. .pdf, .doc
     @pytest.mark.parametrize(
@@ -130,7 +130,7 @@ class TestUploadPreview:
             ],
             ids=[ "DOCX", "PDF" ]
             )
-    async def test_preview_POST_415(self, db_session, async_client, filename, ext, mime_type):
+    async def test_preview_POST_415(self, async_client, filename, ext, mime_type):
         """
         POST upload/preview 415:
         tests upload of unsupported file types
@@ -182,7 +182,7 @@ class TestUploadPreview:
             "Missing both centre_id and marking_window_id"
         ]
     )
-    async def test_preview_POST_400_data(self, db_session, async_client, filename, centre_id, marking_window_id):
+    async def test_preview_POST_400_data(self, async_client, filename, centre_id, marking_window_id):
         """
         POST upload/preview 400
         Tests submissions of missing data

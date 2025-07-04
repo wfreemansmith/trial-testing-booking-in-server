@@ -5,6 +5,8 @@ from src.utils import construct_upload_path, construct_upload_filename, format_v
 from src.schemas.upload_schema import BatchDict, CandidateDict
 from typing import List
 import files_sdk
+import urllib.parse
+from src.logger import logger
 
 def get_folder_name(centre_id: str, marking_window_id: int) -> str:
     """Returns centre folder name for given centre"""
@@ -19,14 +21,9 @@ def get_folder_name(centre_id: str, marking_window_id: int) -> str:
     return construct_upload_path(marking_window.window_name, centre.partner, centre_id)
 
 
-def get_file_name(centre_id: str, batch: BatchDict, candidates: List[CandidateDict]) -> str:
+def get_file_name(centre_id: str, batch: BatchDict, candidates: List[CandidateDict], component: str) -> str:
     """Returns file name"""
-    component_dict = {
-        'R': 'reading_version',
-        'W': 'writing_version',
-        'L': 'listening_version'
-    }
-    component_key = component_dict[batch.component_id]
+    component_key = f"{component}_version"
     filtered_candidate_list = [
         candidate for candidate in candidates
         if batch.version_id == format_version_id(
@@ -39,16 +36,19 @@ def get_file_name(centre_id: str, batch: BatchDict, candidates: List[CandidateDi
     candidate_range = get_candidate_range([candidate.candidate_number for candidate in filtered_candidate_list])
     return f"{centre_id}_{batch.version_id}_{candidate_range}_{number_of_candidates}"
 
+
 class FileHandler():
     def __init__(self):
         files_sdk.set_api_key(FILE_UPLOAD_API_KEY)
 
     # helper functions
     ## REWRITE so this accepts a file not a local path
-    def upload_file(self, local_path: str, destination: str) -> None:
-        """Uploads a file to Files.com to given file path"""
+    def upload_file(self, source_path: str, destination_folder: str, destination_filename: str) -> None:
+        """Uploads a file to Files.com to given file path from temporary path"""
+        destination_path = urllib.parse.urljoin(destination_folder, destination_filename)
+
         try:
-            files_sdk.upload_file(local_path, destination)
+            files_sdk.upload_file(source_path, destination_path, params={"mkdir_parents": True})
         except Exception as e:
-            print(f"Error uploading file: {e}")
+            logger.error(f"Error uploading file: {e}")
             # handle an exception, raise here
