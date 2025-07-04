@@ -2,12 +2,25 @@ from sqlalchemy import select, and_
 from src.db import SessionLocal
 
 class BaseDAO():
-    def __init__(self, session):
-        # if session is None:
-        #     self.session = SessionLocal()
-        #     self._owns_session = True
-        self.session = session
+    def __init__(self, session=None):
+        if session is None:
+            self.session = SessionLocal()
+            self._owns_session = True
+        else:
+            self.session = session
+            self._owns_session = False
         self.model = None
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._owns_session:
+            if exc_type:
+                self.session.rollback()
+            else:
+                self.session.commit()
+            self.session.close()
 
     def select(self, **kwargs):
         """Selects from model with key word arguments as AND conditions"""
@@ -36,4 +49,15 @@ class BaseDAO():
         return self.session.execute(stmt).scalars().first()
 
     def close(self):
-        self.session.close()
+        """Explicitly close session if owned by DAO"""
+        if self._owns_session and self.session:
+            self.session.close()
+
+    def commit(self):
+        """Commit the current transaction"""
+        if self.session:
+            self.session.commit()
+
+    def rollback(self):
+        if self.session:
+            self.session.rollback()
