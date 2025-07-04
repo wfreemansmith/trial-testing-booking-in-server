@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import MetaData, text
 from src.logger import logger
-from src.db import get_database, engine
+from src.db import get_database, get_db_session, engine
 from src.models import get_model_by_tablename
 from src.config import ENV, DB_NAME
 import csv
@@ -61,7 +61,7 @@ def setup_database(session: Session):
 
 if __name__ == "__main__":
     logger.info(f"Using database '{DB_NAME}'")
-    session = get_database()
-
-    reset_database(engine)
-    setup_database(session)
+    # session = get_database()
+    with get_db_session() as session:
+        reset_database(engine)
+        setup_database(session)

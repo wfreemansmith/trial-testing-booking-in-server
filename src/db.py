@@ -2,6 +2,8 @@ from src.config import SQL_DB, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, 
 import pyodbc
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from contextlib import contextmanager
+from src.logger import logger
 
 DB_STRING = f"{SQL_DB}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 engine = create_engine(DB_STRING)
@@ -10,6 +12,21 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def get_database():
     """Returns an SQL alchemy database engine and session"""
     return SessionLocal()
+
+
+@contextmanager
+def get_db_session():
+    """Context manager for database sessions, ensuring proper closure and cleanup"""
+    session = SessionLocal()
+    try:
+        yield session
+        session.commit()
+    except Exception as e:
+        logger.error(f"{e}")
+        logger.info("Rolling back current session...")
+        session.rollback()
+    finally:
+        session.close()
 
 
 def get_legacy_database_connection():

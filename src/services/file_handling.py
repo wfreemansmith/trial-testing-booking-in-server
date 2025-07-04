@@ -1,5 +1,5 @@
 from src.config import FILE_UPLOAD_API_KEY
-from src.db import get_database
+from src.db import get_db_session
 from src.dao import CentreDAO, MarkingWindowDAO
 from src.utils import construct_upload_path, construct_upload_filename, format_version_id, get_candidate_range
 from src.schemas.upload_schema import BatchDict, CandidateDict
@@ -10,15 +10,14 @@ from src.logger import logger
 
 def get_folder_name(centre_id: str, marking_window_id: int) -> str:
     """Returns centre folder name for given centre"""
-    session = get_database()
-    marking_window_dao = MarkingWindowDAO(session)
-    centre_dao = CentreDAO(session)
+    with get_db_session() as session:
+        marking_window_dao = MarkingWindowDAO(session)
+        centre_dao = CentreDAO(session)
 
-    centre = centre_dao.select_one(centre_id=centre_id)
-    marking_window = marking_window_dao.select_one(marking_window_id=marking_window_id)
-    centre_dao.close()
-    marking_window_dao.close()
-    return construct_upload_path(marking_window.window_name, centre.partner, centre_id)
+        centre = centre_dao.select_one(centre_id=centre_id)
+        marking_window = marking_window_dao.select_one(marking_window_id=marking_window_id)
+    
+        return construct_upload_path(marking_window.window_name, centre.partner, centre_id)
 
 
 def get_file_name(centre_id: str, batch: BatchDict, candidates: List[CandidateDict], component: str) -> str:

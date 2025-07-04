@@ -7,24 +7,30 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from src.setup_db import setup_database, reset_database
-from src.db import get_database, engine
+from src.db import engine, get_db_session
 from src.main import app
 
 @pytest.fixture
 def db_session():
     """Sets up and tears down test db data"""
-    engine.dispose()
+    with get_db_session() as session:
+        reset_database(engine)
+        setup_database(session)
 
-    session = get_database()
+        session.flush()
 
-    # Drop and recreate tables
-    reset_database(engine)
-    setup_database(session)
-    session.flush()
+        yield session  
 
-    yield session
+    # session = get_database()
 
-    session.close()
+    # # Drop and recreate tables
+    # reset_database(engine)
+    # setup_database(session)
+    # session.flush()
+
+    # yield session
+
+    # session.close()
 
 
 @pytest_asyncio.fixture
