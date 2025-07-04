@@ -7,6 +7,7 @@ from src.dao.upload_dao import UploadDAO
 from src.dao.version_dao import VersionDAO
 from src.dao.centre_dao import CentreDAO
 from src.dao.marking_window_dao import MarkingWindowDAO
+from src.dao.staged_files_dao import StagedFileDAO
 
 ## NB probably replace this all with SQLalchemy eventually
 

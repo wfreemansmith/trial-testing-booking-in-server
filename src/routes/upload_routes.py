@@ -2,10 +2,11 @@ from fastapi import APIRouter, UploadFile, Form, File, Body, HTTPException, stat
 from src.controllers import upload_controller
 from src.utils import api_response
 from src.schemas.upload_schema import parse_preview_data, parse_upload_data, UploadPayload
-import json
+import json, os, uuid, shutil, tempfile
 
 router = APIRouter()
 
+STAGING_DIR = os.path.join(os.getcwd(), "tmp_uploads")
 
 @router.get("/")
 @api_response()
@@ -51,18 +52,22 @@ async def file_upload(
     token: str = Form(...),
     data: str = Form(...),
     file: UploadFile = File(...)):
-    """Upload scanned materials to files.com"""
+    """Upload scanned materials to staging directory for later upload to files.com"""
     parsed_data = parse_preview_data(json.loads(data))
 
-    if file.filename.endswith('.pdf'):
-        file_bytes = await file.read()
-    else:
+    if not file.filename.endswith('.pdf'):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"File type .{file.filename.split(".")[-1]} not supported"
         )
     
-    upload_controller.upload_file(centre_id=parsed_data.centre_id, marking_window_id=parsed_data.marking_window_id, file=file_bytes)
+    temp_filename = f"{uuid.uuid4()}.pdf"
+    temp_path = os.path.join(STAGING_DIR, temp_filename)
+
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    return upload_controller.stage_file(centre_id=parsed_data.centre_id, marking_window_id=parsed_data.marking_window_id, temp_path=temp_path)
 
 
 @router.post("/submit")

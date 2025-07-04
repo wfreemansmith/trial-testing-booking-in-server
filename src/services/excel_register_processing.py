@@ -4,7 +4,7 @@ from src.errors import FileProcessingError
 from typing import TypedDict, BinaryIO, List, Tuple
 from src.schemas.upload_schema import CandidateDict, ErrorMessage, BatchDict
 from io import BytesIO
-from src.dao import CandidateDAO, VersionDAO
+from src.dao import CandidateDAO, VersionDAO, StagedFileDAO
 from src.logger import logger
 import pandas as pd
 import numpy as np
@@ -16,6 +16,7 @@ from datetime import date, datetime
 session = get_database()
 version_dao = VersionDAO(session)
 candidate_dao = CandidateDAO(session)
+stage_file_dao = StagedFileDAO(session)
 
 
 # constants
@@ -260,6 +261,17 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
         for candidate in filtered_candidates_list:
             version_id = format_version_id(paper=candidate.paper_sat, component=version_col_id[0], version=getattr(candidate, version_col_id[:-3]))
             still_standing_versions.add(version_id)
+
+    # checks for staged uploads
+    for batch in batches_list:
+        staged_file = stage_file_dao.retrieve_file(centre_id=centre_id, marking_window_id=marking_window_id, version_id=batch.version_id)
+        if staged_file:
+            batch.file_uploads.clear()
+            batch.file_uploads.append({"filename": staged_file.destination_filename})
+        elif check_file_upload:
+            batch.errors.append(
+                ErrorMessage(field="filename", message="Please upload a PDF for this version")
+            )
 
     # clean batches list
     filtered_batches_list = [

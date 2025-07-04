@@ -20,12 +20,13 @@ TEST_FILENAME_DATA = [
         upload_preview_expected_res[1]['centre_id'],
         parse_batch_data(batch),
         [parse_candidate_data(candidate) for candidate in upload_preview_expected_res[1]['candidates']],
+        {'R': 'reading','W': 'writing','L': 'listening'}[batch['component_id']],
         upload_preview_expected_res[1]['expected_filenames'][batch['version_id']]
     ) for batch in upload_preview_expected_res[1]['batches']
 ]
-@pytest.mark.parametrize("centre_id, batch, candidates, expected", TEST_FILENAME_DATA)
-def test_get_file_name(centre_id, batch, candidates, expected):
-    result = get_file_name(centre_id, batch, candidates)
+@pytest.mark.parametrize("centre_id, batch, candidates, component, expected", TEST_FILENAME_DATA)
+def test_get_file_name(centre_id, batch, candidates, component, expected):
+    result = get_file_name(centre_id, batch, candidates, component)
     assert result == expected, (
         f"Expected '{expected}', received '{result}'"
     )

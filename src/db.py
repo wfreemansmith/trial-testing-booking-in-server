@@ -1,5 +1,4 @@
 from src.config import SQL_DB, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, LEGACY_DB_HOST, LEGACY_DB_NAME, USERDOMAIN, USERNAME
-import psycopg2
 import pyodbc
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -10,16 +9,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_database():
     """Returns an SQL alchemy database engine and session"""
-    session = SessionLocal()
-    return session
-
-
-def get_database_connection():
-    """Returns connection object to database"""
-    DB_STRING = f"{SQL_DB}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    connection = psycopg2.connect(DB_STRING)
-
-    return connection
+    return SessionLocal()
 
 
 def get_legacy_database_connection():
