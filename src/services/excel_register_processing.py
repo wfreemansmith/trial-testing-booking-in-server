@@ -1,4 +1,4 @@
-from src.db import get_database
+from src.db import get_db_session
 from src.utils import serialise_pydantic_list, format_version_id
 from src.errors import FileProcessingError
 from typing import TypedDict, BinaryIO, List, Tuple
@@ -10,14 +10,6 @@ import pandas as pd
 import numpy as np
 from pandas import DataFrame
 from datetime import date, datetime
-
-
-# create database connection
-session = get_database()
-version_dao = VersionDAO(session)
-candidate_dao = CandidateDAO(session)
-stage_file_dao = StagedFileDAO(session)
-
 
 # constants
 VERSION_ID_COLS = ['reading_version_id', 'writing_version_id', 'listening_version_id']
@@ -48,8 +40,10 @@ def validate_candidate(candidate: CandidateDict) -> List[ErrorMessage]:
 def check_for_duplicates(marking_window_id: int, centre_id: str, candidates_list: List[CandidateDict]) -> None:
     """Checks for duplicates and makes any edits in place we can based on current database results"""
     candidates_to_check = [[candidate.candidate_number, candidate.candidate_name] for candidate in candidates_list]
-    checked_candidates = candidate_dao.is_duplicate_candidate(marking_window_id, centre_id, candidates_to_check)
-    candidate_dao.close()
+    with get_db_session() as session:
+        dao = CandidateDAO(session)
+        checked_candidates = dao.is_duplicate_candidate(marking_window_id, centre_id, candidates_to_check)
+
     for i, result in enumerate(checked_candidates):
         if type(result) is int:
             candidates_list[i].candidate_number = result
@@ -64,8 +58,10 @@ def check_for_duplicates(marking_window_id: int, centre_id: str, candidates_list
 
 def validate_version(batch: BatchDict) -> List[ErrorMessage]:
     """Checks version id on database, logs it as problematic, and returns an error if any are found"""
-    version_exists = version_dao.version_exists(batch.version_id)
-    version_dao.close()
+    with get_db_session() as session:
+        dao = VersionDAO(session)
+        version_exists = dao.version_exists(batch.version_id)
+    
     if not version_exists:
         batch.errors.append(
             ErrorMessage(field="batches", message=f"One or more versions cannot be found on the database. Please check the version, update your candidates, and try again. If you believe this is an error, please contact Cambridge.")
@@ -263,15 +259,17 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
             still_standing_versions.add(version_id)
 
     # checks for staged uploads
-    for batch in batches_list:
-        staged_file = stage_file_dao.retrieve_file(centre_id=centre_id, marking_window_id=marking_window_id, version_id=batch.version_id)
-        if staged_file:
-            batch.file_uploads.clear()
-            batch.file_uploads.append({"filename": staged_file.destination_filename})
-        elif check_file_upload:
-            batch.errors.append(
-                ErrorMessage(field="filename", message="Please upload a PDF for this version")
-            )
+    with get_db_session() as session:
+        dao = StagedFileDAO(session)
+        for batch in batches_list:
+            staged_file = dao.retrieve_file(centre_id=centre_id, marking_window_id=marking_window_id, version_id=batch.version_id)
+            if staged_file:
+                batch.file_uploads.clear()
+                batch.file_uploads.append({"filename": staged_file.destination_filename})
+            elif check_file_upload:
+                batch.errors.append(
+                    ErrorMessage(field="filename", message="Please upload a PDF for this version")
+                )
 
     # clean batches list
     filtered_batches_list = [

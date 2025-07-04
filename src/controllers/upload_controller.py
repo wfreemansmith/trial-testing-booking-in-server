@@ -1,7 +1,7 @@
 from src.services.excel_register_processing import ingest_excel_file, check_lists
 from src.services.file_handling import get_folder_name, get_file_name
 from typing import List, BinaryIO, Dict
-from src.db import get_database
+from src.db import get_db_session
 from src.dao import UploadDAO, StagedFileDAO
 from src.schemas.upload_schema import UploadData, BatchDict, CandidateDict
 import urllib.parse
@@ -34,10 +34,9 @@ def stage_file(centre_id: str, marking_window_id: int, batch: BatchDict, candida
     destination_folder = urllib.parse.urljoin(centre_folder_name, component.capitalize())
 
     # add to staged table
-    session = get_database()
-    stage_dao = StagedFileDAO(session)
-    stage_dao.stage_file(centre_id, marking_window_id, batch.version_id, destination_filename, destination_folder, temp_path)
-    stage_dao.close()
+    with get_db_session() as session:
+        dao = StagedFileDAO(session)
+        dao.stage_file(centre_id, marking_window_id, batch.version_id, destination_filename, destination_folder, temp_path)
 
     # returns dict
     return {
@@ -66,6 +65,6 @@ def submit(data: dict):
     # additional step of checking that files have been uploaded - add to errors if not
     # check dict with check()
     # if results have any errors, return errors
-    session = get_database()
-    dao = UploadDAO(session)
-    dao.insert_upload(data)
+    with get_db_session() as session:
+        dao = UploadDAO(session)
+        dao.insert_upload(data)
