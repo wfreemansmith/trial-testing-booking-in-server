@@ -1,12 +1,12 @@
 from fastapi import APIRouter, UploadFile, Form, File, Body, HTTPException, status
 from src.controllers import upload_controller
 from src.utils import api_response
-from src.schemas.upload_schema import parse_preview_data, parse_upload_data, UploadPayload
+from src.schemas.upload_schema import parse_preview_data, parse_upload_data, parse_uploadfile_data, UploadPayload
 import json, os, uuid, shutil, tempfile
+from src.config import STAGING_DIR
+from src.logger import logger
 
 router = APIRouter()
-
-STAGING_DIR = os.path.join(os.getcwd(), "tmp_uploads")
 
 @router.get("/")
 @api_response()
@@ -53,7 +53,7 @@ async def file_upload(
     data: str = Form(...),
     file: UploadFile = File(...)):
     """Upload scanned materials to staging directory for later upload to files.com"""
-    parsed_data = parse_preview_data(json.loads(data))
+    parsed_data = parse_uploadfile_data(json.loads(data))
 
     if not file.filename.endswith('.pdf'):
         raise HTTPException(
@@ -64,10 +64,17 @@ async def file_upload(
     temp_filename = f"{uuid.uuid4()}.pdf"
     temp_path = os.path.join(STAGING_DIR, temp_filename)
 
+    file.file.seek(0)
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    return upload_controller.stage_file(centre_id=parsed_data.centre_id, marking_window_id=parsed_data.marking_window_id, temp_path=temp_path)
+    return upload_controller.stage_file(
+        centre_id=parsed_data.centre_id,
+        marking_window_id=parsed_data.marking_window_id,
+        batch=parsed_data.batch,
+        candidates=parsed_data.candidates,
+        temp_path=temp_path
+    )
 
 
 @router.post("/submit")

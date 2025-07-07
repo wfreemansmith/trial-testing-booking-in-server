@@ -30,7 +30,7 @@ def stage_file(centre_id: str, marking_window_id: int, batch: BatchDict, candida
     component_dict = {'R': 'reading', 'W': 'writing', 'L': 'listening'}
     component = component_dict[batch.component_id]
     centre_folder_name = get_folder_name(centre_id=centre_id, marking_window_id=marking_window_id)
-    destination_filename = get_file_name(centre_id=centre_id, batch=batch, candidates=candidates, component=component)
+    destination_filename = f"{get_file_name(centre_id=centre_id, batch=batch, candidates=candidates, component=component)}.pdf"
     destination_folder = urllib.parse.urljoin(centre_folder_name, component.capitalize())
 
     # add to staged table

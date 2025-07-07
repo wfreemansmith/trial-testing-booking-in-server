@@ -26,9 +26,10 @@ LEGACY_DB_NAME = os.getenv("LEGACY_DB_NAME")
 USERDOMAIN = os.getenv("USERDOMAIN")
 USERNAME = os.getenv("USERNAME")
 
-# Files.com
+# File handling and FTP
 FILE_UPLOAD_API_KEY = os.getenv("FILE_UPLOAD_API_KEY")
 FILE_UPLOAD_BASE_URL = os.getenv("FILE_UPLOAD_BASE_URL")
+STAGING_DIR = os.path.join(os.getcwd(), "tmp_uploads")
 
 # debug mode
 parser = argparse.ArgumentParser()

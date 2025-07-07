@@ -19,7 +19,7 @@ def construct_upload_filename(centre_id: str, version_id: str, lowest_cand: int,
     Returns filename in agreed naming convention:
     Pretest Centre Number_Version_Candidate Range_Number of Candidates
     """
-    return f"{centre_id}_{version_id}_{str(lowest_cand).zfill(4)}-{str(highest_cand).zfill(4)}_{num_of_cands}"
+    return f"{centre_id}_{version_id}_{str(lowest_cand).zfill(4)}-{str(highest_cand).zfill(4)}_{num_of_cands} candidates"
 
 def message_editor(message: str, **kwargs) -> str:
     """Accepts message and keyword arguments, replaces keywords in message with values of argument"""

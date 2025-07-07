@@ -9,7 +9,7 @@ import urllib.parse
 from src.logger import logger
 
 def get_folder_name(centre_id: str, marking_window_id: int) -> str:
-    """Returns centre folder name for given centre"""
+    """Returns centre folder name for given centre, when only the centre_id and marking_window_id are known"""
     with get_db_session() as session:
         marking_window_dao = MarkingWindowDAO(session)
         centre_dao = CentreDAO(session)
@@ -21,7 +21,7 @@ def get_folder_name(centre_id: str, marking_window_id: int) -> str:
 
 
 def get_file_name(centre_id: str, batch: BatchDict, candidates: List[CandidateDict], component: str) -> str:
-    """Returns file name"""
+    """Receives centre info and batch / candidate info in Pydantic format, returns appropriate file name"""
     component_key = f"{component}_version"
     filtered_candidate_list = [
         candidate for candidate in candidates
@@ -33,7 +33,7 @@ def get_file_name(centre_id: str, batch: BatchDict, candidates: List[CandidateDi
     ]
     number_of_candidates = len(filtered_candidate_list)
     candidate_range = get_candidate_range([candidate.candidate_number for candidate in filtered_candidate_list])
-    return f"{centre_id}_{batch.version_id}_{candidate_range}_{number_of_candidates}"
+    return f"{centre_id}_{batch.version_id}_{candidate_range}_{number_of_candidates} candidates"
 
 
 class FileHandler():

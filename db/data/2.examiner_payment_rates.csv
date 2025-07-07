@@ -3,8 +3,8 @@
 430637,NON-UK,GBP,GT,marking,6.75,per script,0
 424374,UK,GBP,AC,marking,6.39,per script,0.1207
 424373,UK,GBP,GT,marking,6.39,per script,0.1207
-430656,AUD,AUD,AC,marking,13.4,per script,0
-430652,AUD,AUD,GT,marking,13.4,per script,0
+430656,AUD,AUD,AC,marking,13.3,per script,0
+430652,AUD,AUD,GT,marking,13.3,per script,0
 430659,NZD,NZD,AC,marking,17.4,per script,0
 430655,NZD,NZD,GT,marking,17.4,per script,0
 430657,CAD,CAD,AC,marking,14.6,per script,0
@@ -27,8 +27,8 @@
 430575,NON-UK,GBP,GT,re-read,6.75,per script,0
 424312,UK,GBP,AC,re-read,6.39,per script,0.1207
 424311,UK,GBP,GT,re-read,6.39,per script,0.1207
-430596,AUD,AUD,AC,re-read,13.4,per script,0
-430593,AUD,AUD,GT,re-read,13.4,per script,0
+430596,AUD,AUD,AC,re-read,13.3,per script,0
+430593,AUD,AUD,GT,re-read,13.3,per script,0
 430602,NZD,NZD,AC,re-read,17.4,per script,0
 430601,NZD,NZD,GT,re-read,17.4,per script,0
 430597,CAD,CAD,AC,re-read,14.6,per script,0

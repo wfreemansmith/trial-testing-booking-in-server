@@ -66,13 +66,13 @@ upload_preview_expected_res = [
         "filename": "test_register_2",
         "centre_id": "3243",
         "expected_filenames": {
-            "ACRAP123": "3243_ACRAP123_0001-0008_4",
-            "ACWIP1157": "3243_ACWIP1157_0001-0002_2",
-            "ACWIP1158": "3243_ACWIP1158_0003-0008_2",
-            "GTRCP54": "3243_GTRCP54_0004-0006_3",
-            "GTWAP476": "3243_GTWAP476_0005-0006_2",
-            "LBP23": "3243_LBP23_0005_1",
-            "LBP59": "3243_LBP59_0001-0008_5"
+            "ACRAP123": "3243_ACRAP123_0001-0008_4 candidates",
+            "ACWIP1157": "3243_ACWIP1157_0001-0002_2 candidates",
+            "ACWIP1158": "3243_ACWIP1158_0003-0008_2 candidates",
+            "GTRCP54": "3243_GTRCP54_0004-0006_3 candidates",
+            "GTWAP476": "3243_GTWAP476_0005-0006_2 candidates",
+            "LBP23": "3243_LBP23_0005_1 candidates",
+            "LBP59": "3243_LBP59_0001-0008_5 candidates"
         },
         "batches": [
             {
@@ -1465,5 +1465,46 @@ duplicate_response = [
                 "message": "There was an error with one or more candidates."
             }
         ]
+    }
+]
+
+upload_fileupload_data = [
+    {
+        "filename": "test_file_upload_small_pdf",
+        "centre_id": "3243",
+        "marking_window_id": 1,
+        "batch": {
+            "version_id": "ACRAP123",
+            "component_id": "R"
+        },
+        "candidates": [
+            {
+                "candidate_number": 1,
+                "candidate_name": "Mary Bloggs",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 2,
+                "candidate_name": "Joe Santiago",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 3,
+                "candidate_name": "Alice White",
+                "paper_sat": "AC",
+                "writing_version": "IP1158",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            }
+        ],
+        "expected_destination_folder": "/AOG/Operations/IELTS Admin/IELTS Trial Testing TESTING January-March 2025/IDP/3243/Reading",
+        "expected_destination_filename": "3243_ACRAP123_0001-0003_3 candidates.pdf"
+        
     }
 ]
