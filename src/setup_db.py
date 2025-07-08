@@ -46,6 +46,7 @@ def setup_database(session: Session):
     logger.info('Creating database tables...')
     Base.metadata.create_all(engine)
 
+    logger.info(f"Seeding database with '{data_mode}' data")
     # iterates through all data and inputs
     for data_set in ["data", f"{data_mode}_data"]:
         for root, _, files in os.walk(os.path.join("db", data_set)):

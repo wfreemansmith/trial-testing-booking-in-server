@@ -316,7 +316,7 @@ class TestUploadRefresh:
     ]
     FILE_UPLOAD_TEST_IDS = [ entry.get("filename") for entry in upload_fileupload_data]
     @pytest.mark.parametrize("filename, centre_id, marking_window_id, batch, candidates, expected_destination_folder, expected_destination_filename", FILE_UPLOAD_TEST_DATA, ids=FILE_UPLOAD_TEST_IDS)
-    async def test_file_upload_POST_200(self, db_session, async_client, filename, centre_id, marking_window_id, batch, candidates, expected_destination_folder, expected_destination_filename):
+    async def test_file_upload_POST_200(self, db_session, async_client, cleanup_tmp_files, filename, centre_id, marking_window_id, batch, candidates, expected_destination_folder, expected_destination_filename):
         """
         POST upload/file_upload 200:
         Tests a single file upload to the staging area and to the database

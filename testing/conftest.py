@@ -1,5 +1,6 @@
 import sys
 import os
+from src.config import STAGING_DIR
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -21,17 +22,18 @@ def db_session():
 
         yield session  
 
-    # session = get_database()
 
-    # # Drop and recreate tables
-    # reset_database(engine)
-    # setup_database(session)
-    # session.flush()
+@pytest.fixture
+def cleanup_tmp_files():
+    def cleanup():
+        for filename in os.listdir(STAGING_DIR):
+            file_path = os.path.join(STAGING_DIR, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
 
-    # yield session
-
-    # session.close()
-
+    cleanup()
+    yield
+    cleanup()
 
 @pytest_asyncio.fixture
 async def async_client():
