@@ -40,8 +40,6 @@ class FileHandler():
     def __init__(self):
         files_sdk.set_api_key(FILE_UPLOAD_API_KEY)
 
-    # helper functions
-    ## REWRITE so this accepts a file not a local path
     def upload_file(self, source_path: str, destination_folder: str, destination_filename: str) -> None:
         """Uploads a file to Files.com to given file path from temporary path"""
         destination_path = urllib.parse.urljoin(destination_folder, destination_filename)
@@ -50,4 +48,13 @@ class FileHandler():
             files_sdk.upload_file(source_path, destination_path, params={"mkdir_parents": True})
         except Exception as e:
             logger.error(f"Error uploading file: {e}")
-            # handle an exception, raise here
+            raise
+
+    def delete_file(self, destination_folder: str, destination_filename: str):
+        """Deletes a file on Files.com (useful for rollback)"""
+        path = urllib.parse.urljoin(destination_folder, destination_filename)
+
+        try:
+            files_sdk.File.delete(path)
+        except Exception as e:
+            logger.error(f"Delete file failed, could not delete {path}: {e}")

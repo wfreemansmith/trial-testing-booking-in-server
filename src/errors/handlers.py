@@ -2,7 +2,7 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from pydantic import ValidationError
-from src.errors.custom_expeptions import FileProcessingError, UnprocessableEntity
+from src.errors.custom_expeptions import FileProcessingError, UnprocessableEntity, StagedFileNotFound
 
 async def http_exception_handler(request: Request, e: HTTPException):
     return JSONResponse(
@@ -44,6 +44,16 @@ async def unprocessable_error_handler(request: Request, e: UnprocessableEntity):
             "code": status.HTTP_422_UNPROCESSABLE_ENTITY
             }
         )
+
+async def staged_file_not_found_handler(request: Request, exc: StagedFileNotFound):
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "status": "error",
+            "message": str(exc) if str(exc) else f"{str(exc)} Please contact support.",
+            "code": status.HTTP_500_INTERNAL_SERVER_ERROR
+        }
+    )
 
 async def server_error_handler(request: Request, exc: Exception):
     return JSONResponse(

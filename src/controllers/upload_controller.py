@@ -4,6 +4,7 @@ from typing import List, BinaryIO, Dict
 from src.db import get_db_session
 from src.dao import UploadDAO, StagedFileDAO
 from src.schemas.upload_schema import UploadData, BatchDict, CandidateDict
+from src.errors import StagedFileNotFound
 import urllib.parse
 
 
@@ -61,11 +62,53 @@ def check(data: UploadData, check_file_upload: bool = False) -> Dict[str, List[d
         }
 
 def submit(data: dict):
-    """Submits data to database"""
+    """Submits data to database and uploads file"""
     # additional step of checking that files have been uploaded - add to errors if not
     # asyncronous operation - get the file from the server and upload, then delete the file
-    # check dict with check()
-    # if results have any errors, return errors
+    from src.services.file_handling import FileHandler
+    from logger import logger
+    import os
+
     with get_db_session() as session:
-        dao = UploadDAO(session)
-        dao.insert_upload(data)
+        staged_dao = StagedFileDAO(session)
+        file_handler = FileHandler()
+
+        # retrieves stored files from server, uploads, rollback if not achieved atomically 
+        successful_uploads = []
+
+        for batch in data['batches']:
+            try:
+                staged = staged_dao.retrieve_file(
+                    centre_id=data['centre_id'],
+                    marking_window_id=data['marking_window_id'],
+                    version_id=batch['version_id']
+                    )
+                
+                if not staged:
+                    raise StagedFileNotFound("No record of the file was found on the database.")
+                
+                if not os.path.exists(staged.temp_path):
+                    raise StagedFileNotFound("A file could not be found while attempting to upload.")
+                
+                
+                file_handler.upload_file(
+                    source_path=staged.temp_path,
+                    destination_filename=staged.destination_filename,
+                    destination_folder=staged.destination_folder)
+                
+                successful_uploads.append(staged)
+                batch.setdefault('file_uploads', []).append({'file_name': staged.destination_filename})
+            except Exception as e:
+                logger.error(f"Upload failed, attempt rollback of {len(successful_uploads)} files")
+                for staged in successful_uploads:
+                    file_handler.delete_file(staged.destination_folder, staged.destination_filename)
+                raise
+
+        # deletes temp files only on successful upload of all files
+        for staged in successful_uploads:
+            if os.path.exists(staged.temp_path):
+                os.remove(staged.temp_path)
+
+        # finally enters record on db
+        upload_dao = UploadDAO(session)
+        upload_dao.insert_upload(data)

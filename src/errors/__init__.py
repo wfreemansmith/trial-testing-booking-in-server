@@ -1,2 +1,2 @@
-from src.errors.handlers import http_exception_handler, file_processing_error_handler, server_error_handler, validation_error_handler, unprocessable_error_handler
-from src.errors.custom_expeptions import FileProcessingError, UnprocessableEntity
+from src.errors.handlers import http_exception_handler, file_processing_error_handler, server_error_handler, validation_error_handler, unprocessable_error_handler, staged_file_not_found_handler
+from src.errors.custom_expeptions import FileProcessingError, UnprocessableEntity, StagedFileNotFound
