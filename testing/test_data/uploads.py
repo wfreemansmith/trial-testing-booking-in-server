@@ -5,6 +5,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_1",
         "centre_id": "3243",
+        "marking_window_id": 1,
         "batches": [
             {
                 "version_id": "ACRAP123",
@@ -65,6 +66,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_2",
         "centre_id": "3243",
+        "marking_window_id": 1,
         "expected_filenames": {
             "ACRAP123": "3243_ACRAP123_0001-0008_4 candidates",
             "ACWIP1157": "3243_ACWIP1157_0001-0002_2 candidates",
@@ -188,6 +190,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_3",
         "centre_id": "3243",
+        "marking_window_id": 1,
         "batches": [
             {
                 "version_id": "ACRAP123",
@@ -272,6 +275,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_4",
         "centre_id": "3243",
+        "marking_window_id": 1,
         "batches": [
             {
                 "version_id": "ACRAP123",
@@ -396,6 +400,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_5",
         "centre_id": "3243",
+        "marking_window_id": 1,
         "batches": [
             {
                 "version_id": "ACRAP123",
@@ -475,6 +480,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_6",
         "centre_id": "3243",
+        "marking_window_id": 1,
         "batches": [
             {
                 "version_id": "ACRAP123",
@@ -564,6 +570,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_7",
         "centre_id": "3243",
+        "marking_window_id": 1,
         "batches": [
             {
                 "version_id": "ACWIP1157",
@@ -1506,5 +1513,117 @@ upload_fileupload_data = [
         "expected_destination_folder": "/AOG/Operations/IELTS Admin/IELTS Trial Testing TESTING January-March 2025/IDP/3243/Reading",
         "expected_destination_filename": "3243_ACRAP123_0001-0003_3 candidates.pdf"
         
+    },
+    {
+        "filename": "test_file_upload_medium_pdf",
+        "centre_id": "3243",
+        "marking_window_id": 1,
+        "batch": {
+            "version_id": "LBP59",
+            "component_id": "L"
+        },
+        "candidates": [
+            {
+                "candidate_number": 1,
+                "candidate_name": "Mary Bloggs",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 2,
+                "candidate_name": "Joe Santiago",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 3,
+                "candidate_name": "Alice White",
+                "paper_sat": "AC",
+                "writing_version": "IP1158",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            }
+        ],
+        "expected_destination_folder": "/AOG/Operations/IELTS Admin/IELTS Trial Testing TESTING January-March 2025/IDP/3243/Listening",
+        "expected_destination_filename": "3243_LBP59_0001-0003_3 candidates.pdf"
+    },
+    {
+        "filename": "test_file_upload_large_pdf",
+        "centre_id": "3243",
+        "marking_window_id": 1,
+        "batch": {
+            "version_id": "ACWIP1157",
+            "component_id": "W"
+        },
+        "candidates": [
+            {
+                "candidate_number": 1,
+                "candidate_name": "Mary Bloggs",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 2,
+                "candidate_name": "Joe Santiago",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 3,
+                "candidate_name": "Alice White",
+                "paper_sat": "AC",
+                "writing_version": "IP1158",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            }
+        ],
+        "expected_destination_folder": "/AOG/Operations/IELTS Admin/IELTS Trial Testing TESTING January-March 2025/IDP/3243/Writing",
+        "expected_destination_filename": "3243_ACWIP1157_0001-0002_2 candidates.pdf"
+    },
+        {
+        "filename": "test_file_upload_very_large_pdf",
+        "centre_id": "3243",
+        "marking_window_id": 1,
+        "batch": {
+            "version_id": "ACWIP1158",
+            "component_id": "W"
+        },
+        "candidates": [
+            {
+                "candidate_number": 1,
+                "candidate_name": "Mary Bloggs",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 2,
+                "candidate_name": "Joe Santiago",
+                "paper_sat": "AC",
+                "writing_version": "IP1157",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            },
+            {
+                "candidate_number": 3,
+                "candidate_name": "Alice White",
+                "paper_sat": "AC",
+                "writing_version": "IP1158",
+                "reading_version": "AP123",
+                "listening_version": "BP59"
+            }
+        ],
+        "expected_destination_folder": "/AOG/Operations/IELTS Admin/IELTS Trial Testing TESTING January-March 2025/IDP/3243/Writing",
+        "expected_destination_filename": "3243_ACWIP1158_0003_1 candidates.pdf"
     }
 ]
+

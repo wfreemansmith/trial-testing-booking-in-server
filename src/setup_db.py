@@ -16,10 +16,10 @@ def reset_database(engine):
     metadata.reflect(bind=engine)
 
     # drop all tables
-    if __name__ == "__main__": logger.info("Dropping tables...")
+    logger.info("Dropping tables...")
     with engine.begin() as conn:
         for table in reversed(metadata.sorted_tables):
-            if __name__ == "__main__": logger.debug(f"Dropping {table.name}")
+            logger.debug(f"Dropping {table.name}")
             conn.execute(text(f"DROP TABLE IF EXISTS {table.name} CASCADE;"))
 
 
@@ -46,6 +46,7 @@ def setup_database(session: Session):
     logger.info('Creating database tables...')
     Base.metadata.create_all(engine)
 
+    logger.info(f"Seeding database with '{data_mode}' data")
     # iterates through all data and inputs
     for data_set in ["data", f"{data_mode}_data"]:
         for root, _, files in os.walk(os.path.join("db", data_set)):

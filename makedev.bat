@@ -56,6 +56,7 @@ git rm --cached .env.production
 git rm --cached -r __pycache__/
 git rm --cached *.pyc
 git rm --cached -r db/private_data/
+git rm --cached -r tmp_uploads/
 goto end
 
 :help

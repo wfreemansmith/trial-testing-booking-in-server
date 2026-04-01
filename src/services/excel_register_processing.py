@@ -206,11 +206,6 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
         if batch.errors:
             versions_not_found.add(batch.version_id)
             errors_list.extend(batch.errors)
-        if check_file_upload:
-            if not batch.file_uploads:
-                batch.errors.append(
-                    ErrorMessage(field="file_uploads", message="Please upload a file.")
-                )
     
     # check candidate numbers against database & for any in-list duplicates
     check_for_duplicates(marking_window_id, centre_id, candidates_list)

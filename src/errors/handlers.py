@@ -2,7 +2,7 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from pydantic import ValidationError
-from src.errors.custom_expeptions import FileProcessingError
+from src.errors.custom_expeptions import FileProcessingError, UnprocessableEntity
 
 async def http_exception_handler(request: Request, e: HTTPException):
     return JSONResponse(
@@ -33,6 +33,17 @@ async def validation_error_handler(request: Request, e: ValidationError):
             "code": status.HTTP_400_BAD_REQUEST
             }
         )    
+
+async def unprocessable_error_handler(request: Request, e: UnprocessableEntity):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "status": "error",
+            "data": e.data,
+            "message": e.message,
+            "code": status.HTTP_422_UNPROCESSABLE_ENTITY
+            }
+        )
 
 async def server_error_handler(request: Request, exc: Exception):
     return JSONResponse(

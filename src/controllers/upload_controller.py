@@ -63,6 +63,7 @@ def check(data: UploadData, check_file_upload: bool = False) -> Dict[str, List[d
 def submit(data: dict):
     """Submits data to database"""
     # additional step of checking that files have been uploaded - add to errors if not
+    # asyncronous operation - get the file from the server and upload, then delete the file
     # check dict with check()
     # if results have any errors, return errors
     with get_db_session() as session:

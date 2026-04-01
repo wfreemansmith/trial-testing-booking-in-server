@@ -5,6 +5,7 @@ from src.schemas.upload_schema import parse_preview_data, parse_upload_data, par
 import json, os, uuid, shutil, tempfile
 from src.config import STAGING_DIR
 from src.logger import logger
+from src.errors import UnprocessableEntity
 
 router = APIRouter()
 
@@ -90,6 +91,6 @@ def submit_upload(payload: UploadPayload):
     checked_data = upload_controller.check(parsed_data, check_file_upload=True)
 
     if checked_data['errors']:
-        return checked_data
+        raise UnprocessableEntity(message="Could not process upload", data=checked_data)
     else:
         upload_controller.submit(data)

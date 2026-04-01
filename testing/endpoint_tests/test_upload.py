@@ -29,7 +29,7 @@ class TestUploadPreview:
             "filename, centre_id, expected_candidates, expected_batches, expected_errors",
             PREVIEW_TEST_DATA,
             ids=PREVIEW_TEST_IDS)
-    async def test_preview_POST_200(self, async_client, filename, centre_id, expected_candidates, expected_batches, expected_errors):
+    async def test_preview_POST_200(self, db_session, async_client, filename, centre_id, expected_candidates, expected_batches, expected_errors):
         """
         POST upload/preview 200:
         Tests happy endpoints, successful upload of Excel sheet. Includes both with no errors and with expected errors
@@ -133,7 +133,7 @@ class TestUploadPreview:
             ],
             ids=[ "DOCX", "PDF" ]
             )
-    async def test_preview_POST_415(self, async_client, filename, ext, mime_type):
+    async def test_preview_POST_415(self, db_session, async_client, filename, ext, mime_type):
         """
         POST upload/preview 415:
         tests upload of unsupported file types
@@ -185,7 +185,7 @@ class TestUploadPreview:
             "Missing both centre_id and marking_window_id"
         ]
     )
-    async def test_preview_POST_400_data(self, async_client, filename, centre_id, marking_window_id):
+    async def test_preview_POST_400_data(self, db_session, async_client, filename, centre_id, marking_window_id):
         """
         POST upload/preview 400
         Tests submissions of missing data
@@ -271,7 +271,7 @@ class TestUploadRefresh:
     ]
 
     @pytest.mark.parametrize("input, expected_output", REFRESH_TEST_DATA, ids=REFRESH_TEST_IDS)
-    async def test_refresh_POST_200(self, async_client, input, expected_output):
+    async def test_refresh_POST_200(self, db_session, async_client, input, expected_output):
         """
         POST upload/refresh 200:
         Tests happy endpoints, no errors found and expected errors found
@@ -316,14 +316,14 @@ class TestUploadRefresh:
     ]
     FILE_UPLOAD_TEST_IDS = [ entry.get("filename") for entry in upload_fileupload_data]
     @pytest.mark.parametrize("filename, centre_id, marking_window_id, batch, candidates, expected_destination_folder, expected_destination_filename", FILE_UPLOAD_TEST_DATA, ids=FILE_UPLOAD_TEST_IDS)
-    async def test_file_upload_POST_200(self, db_session, async_client, filename, centre_id, marking_window_id, batch, candidates, expected_destination_folder, expected_destination_filename):
+    async def test_file_upload_POST_200(self, db_session, async_client, cleanup_tmp_files, filename, centre_id, marking_window_id, batch, candidates, expected_destination_folder, expected_destination_filename):
         """
         POST upload/file_upload 200:
         Tests a single file upload to the staging area and to the database
         """
 
         ## ARRANGE
-        filename = filename = f"{filename}.pdf"
+        filename = f"{filename}.pdf"
         filepath = os.path.join(TEST_REGISTER_LOCATION, filename)
         formdata = {
             "token": "dummy-token",
@@ -385,4 +385,103 @@ class TestUploadRefresh:
         # check file has been created locally
         assert os.path.exists(staged_db_entry.temp_path), (
             f"Looked for temp file at path {staged_db_entry.temp_path} and could not find it"
+        )
+
+    SUBMIT_TEST_DATA = [
+        (
+            entry.get('centre_id'),
+            entry.get('marking_window_id'),
+            f"{entry.get('filename')}.xlsx",
+            f"{upload_fileupload_data[0].get('filename')}.pdf"
+        ) for entry in upload_preview_expected_res
+    ]
+    @pytest.mark.parametrize("centre_id, marking_window_id, candidate_register, pdf_filename", SUBMIT_TEST_DATA)
+    async def test_submit_POST_200(self, db_session, async_client, cleanup_tmp_files, centre_id, marking_window_id, candidate_register, pdf_filename):
+        """
+        POST upload/submit 200:
+        End-to-end process from uploading spreadsheet to submitting files
+        """
+
+        # Upload Excel document
+        filepath = os.path.join(TEST_REGISTER_LOCATION, candidate_register)
+        formdata = {
+            "token": "dummy-token",
+            "data": json.dumps(
+                {
+                    "centre_id": centre_id,
+                    "marking_window_id": marking_window_id
+                    }
+                )
+            }
+        files = {"file": (candidate_register, open(filepath, "rb"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+        response = await async_client.post("/upload/preview", data=formdata, files=files)
+        content = response.json()
+        assert response.status_code == 200, (
+            f"Expected 200, received {response.status_code} with message '{content['message']}'"
+        )
+
+        candidates = content['data'].get('candidates')
+        batches = content['data'].get('batches')
+
+        # Try submitting without uploading the files
+        payload = {
+            "token": "dummy-token",
+            "data": {
+                "centre_id": centre_id,
+                "marking_window_id": marking_window_id,
+                "batches": batches,
+                "candidates": candidates
+            }
+        }
+        response = await async_client.post("/upload/submit", json=payload)
+        content = response.json()
+        assert response.status_code == 422, (
+            f"Expected 200, received {response.status_code} with message '{content['message']}'"
+        )
+
+        expected_error = {
+            "field": "batches",
+            "message": "There was an error with one or more of the uploads."
+            }
+        assert expected_error in content['data']['errors'], (
+            f"Did not receive the expected error in the response, received {content['data']['errors']}"
+        )
+
+        # Upload file for each batch (use same file for test)
+        pdf_filepath = os.path.join(TEST_REGISTER_LOCATION, pdf_filename)
+        for batch in batches:
+            formdata = {
+                "token": "dummy-token",
+                "data": json.dumps(
+                    {
+                        "centre_id": centre_id,
+                        "marking_window_id": marking_window_id,
+                        "batch": batch,
+                        "candidates": candidates
+                    }
+                )
+            }
+            files = {"file": (pdf_filename, open(pdf_filepath, "rb"), "application/pdf")}
+            response = await async_client.post("/upload/file_upload", data=formdata, files=files)
+            assert response.status_code == 200, (
+            f"Expected 200, received {response.status_code} with message '{content['message']}'"
+            )
+            file_upload_response = response.json()
+            file_upload_dict = { "file_name": file_upload_response['data']['filename'] }
+            batch.setdefault('file_uploads', []).append(file_upload_dict)
+
+        # Submit with all files
+        payload = {
+            "token": "dummy-token",
+            "data": {
+                "centre_id": centre_id,
+                "marking_window_id": marking_window_id,
+                "batches": batches,
+                "candidates": candidates
+            }
+        }
+        response = await async_client.post("/upload/submit", json=payload)
+        content = response.json()
+        assert response.status_code == 200, (
+            f"Expected 200, received {response.status_code} with message '{content['message']}'"
         )
