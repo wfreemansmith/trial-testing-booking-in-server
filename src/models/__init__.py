@@ -1,8 +1,52 @@
 from sqlalchemy import Column, Integer, Numeric, Float, String, Text, Date, Boolean, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, validates, declarative_base, reconstructor
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.dialects.postgresql import ARRAY
 
 Base = declarative_base()
+
+class User(Base):
+    """User table for staff, centres and master"""
+    __tablename__ = "users"
+
+    # generated fields
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # provided fields
+    token_hash = Column(String, nullable=False, unique=True)
+    role_id = Column(Integer, ForeignKey("roles.role_id"), nullable=False)
+    centre_contact_id = Column(Integer, ForeignKey("centre_contacts.centre_contact_id"), nullable=True)
+    marking_window_id = Column(Integer, ForeignKey("marking_windows.marking_window_id"), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(Date, server_default=func.now())
+    
+    # relationships
+    role = relationship("Role", back_populates="users")
+    centre_contact = relationship("CentreContact", back_populates="user", uselist=False)
+    marking_window = relationship("MarkingWindow", back_populates="users")
+
+    @hybrid_property
+    def display_name(self) -> str:
+        if self.centre_contact:
+            return self.centre_contact.contact_name
+        return "Admin"
+
+
+class Role(Base):
+    """Roles and access levels"""
+    __tablename__ = "roles"
+
+    # generated field
+    role_id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # provided fields
+    role_name = Column(String, nullable=False, unique=True)
+    permissions = Column(ARRAY(String), nullable=False, default=[])
+
+    # relationships
+    users = relationship("User", back_populates="role")
+    
 
 class CandidateFeedback(Base):
     """Reference table for pre-written feedback offered to candidates upon return of their results. Feedback is organised by bandscore and by component"""
@@ -44,9 +88,10 @@ class MarkingWindow(Base):
     window_end = Column(Date, nullable=False)
     window_upload_destination = Column(String)
 
-    # marking_window
+    # relationships
     uploads = relationship("Upload", back_populates="marking_window")
     requests = relationship("CentreRequests", back_populates="marking_window", cascade="all, delete-orphan")
+    user = relationship("User", back_populates="marking_window")
 
 
 class LanguageFamily(Base):
@@ -131,6 +176,7 @@ class CentreContact(Base):
 
     # relationships
     centre = relationship("Centre", back_populates="contacts")
+    user = relationship("User", back_populates="centre_contact")
 
     # validation
     @validates('primary_contact')
