@@ -57,6 +57,7 @@ git rm --cached -r __pycache__/
 git rm --cached *.pyc
 git rm --cached -r db/private_data/
 git rm --cached -r tmp_uploads/
+git rm --cached testing/test_documents/*.pdf
 goto end
 
 :help
