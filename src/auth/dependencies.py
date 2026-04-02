@@ -12,7 +12,7 @@ def verify_token_get_user(raw_token: str, db: Session) -> User:
         .filter(User.token_hash == hashed_token, User.is_active == True)
         .options(
             joinedload(User.role),
-            joinedload(User.centre_contact).joinedload(CentreContact),
+            joinedload(User.centre_contact).joinedload(CentreContact.centre),
             joinedload(User.marking_window))
         .first()
     )

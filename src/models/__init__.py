@@ -34,7 +34,7 @@ class User(Base):
             return self.centre_contact.contact_name
         return "Admin"
     
-    @validates
+    @validates('token_hash')
     def hash_token(self, key, value):
         if len(value) == 64:
             return value
