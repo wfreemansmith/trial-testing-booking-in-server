@@ -9,3 +9,4 @@ __pycache__/
 *.pyo
 tmp_uploads/*
 testing/test_documents/*.pdf
+.venv

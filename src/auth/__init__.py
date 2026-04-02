@@ -1,0 +1,1 @@
+from src.auth.dependencies import require_permission, require_centre_permission

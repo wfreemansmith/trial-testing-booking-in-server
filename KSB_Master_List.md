@@ -20,7 +20,8 @@
 | **Report** | "Early user requirements gathered from Assessment, Validation and Operations teams, translated to technical specs, refined via testing and research" |
 | **Code** | `models/__init__.py` — schema serves multiple user types (centres, examiners, IELTS staff, managers) |
 | **Code** | Pydantic schemas enforce consistent data contracts across all user-facing API boundaries |
-| **Code** | `User` + `Role` models — RBAC design directly maps to multi-user requirement; each user type (centre_admin, staff, master) has scoped access reflecting their operational role |
+| **Code** | `User` + `Role` models — three distinct roles (centre_admin, staff, master) map directly to real user groups; each scoped to only what they need |
+| **Code** | `get_context` endpoint — returns scoped display_name, centre_id, window_name per user type; frontend hydrated from token, not from user-supplied form data |
 | ⚠️ **Gap** | Add explicit justification: *why* relational DB over alternatives, *why* DAO pattern over raw SQL. Link each to a specific requirement. Mention GDPR compliance via access controls + audit trail |
 
 ---
@@ -52,15 +53,18 @@
 | Where | Detail |
 | --- | --- |
 | **Report** | "Role Based and Tokenised Access" — RBAC + token security, least privilege, data protection |
-| **Report** | "Validation, error handling" — differentiates user vs system errors |
+| **Report** | "Validation, error handling" — differentiates user vs system errors; 401 vs 403 distinction (authentication vs authorisation) |
 | **Code** | `submit()` — **compensating transaction pattern**: Files.com + PostgreSQL can't share a transaction boundary; `successful_uploads` tracks partial state, rolled back on failure |
-| **Code** | `handlers.py` — structured HTTP error responses (400/415/422/500) |
+| **Code** | `handlers.py` — structured HTTP error responses; generic `HTTPException` handler uses dynamic `e.status_code` so 401/403 handled without duplication |
 | **Code** | `models/__init__.py` — FK constraints, `CheckConstraint` on `centre_id`, `nullable=False` |
-| **Code** | `User` model — `token_hash` (SHA-256, never raw token stored), `is_active` for soft-disable, `centre_contact_id` scoping access to a specific person not just a centre |
-| **Code** | `Role` model — `permissions` as PostgreSQL `ARRAY(String)`, `resource:action` convention (e.g. `upload:write`) enables fine-grained per-route checks |
-| **Code** | `auth/dependencies.py` (planned) — FastAPI `Depends()` injects permission check per route; 403 raised before handler runs if permission absent |
-| **Design** | Magic-link / query-token pattern: token generated with `secrets.token_urlsafe(32)`, SHA-256 hashed before DB storage; raw token never persists anywhere |
-| **Design** | Distinction between hashing strategies: bcrypt (slow, salted) for passwords vs SHA-256 (fast) for random tokens — documented rationale for your report |
+| **Code** | `User` model — `token_hash` stores SHA-256 hash only, raw token never persisted; `is_active` for GDPR-aligned soft-disable; `centre_contact_id` FK scopes access to a specific person not just a centre |
+| **Code** | `Role` model — `permissions` as PostgreSQL `ARRAY(String)`, `resource:action` convention; `@validates` coerces CSV string with defensive `strip("{ }")` for malformed spacing |
+| **Code** | `auth/dependencies.py` — `require_permission()` and `require_centre_permission()` as FastAPI `Depends()` factories; checks token validity (401), window expiry with 7-day grace (403), role permissions (403), centre association (403) |
+| **Code** | `dao/auth_dao.py` — `verify_token_get_user()` hashes incoming `?q=` token, queries DB, eager-loads role + centre_contact + marking_window in one round trip |
+| **Code** | `get_context` endpoint — `centre_id` and `marking_window_id` derived from trusted user object, not user-supplied form data; eliminates a class of data tampering |
+| **Design** | Magic-link pattern: `secrets.token_urlsafe(32)` generates unguessable token; SHA-256 hashed before DB storage; if DB compromised tokens cannot be recovered |
+| **Design** | Deliberate bcrypt vs SHA-256 distinction — bcrypt for passwords (slow, salted, brute-force resistant), SHA-256 for random tokens (fast, sufficient given token entropy) |
+| **Design** | Dynamic URL-based permission derivation considered and rejected — explicit `resource:action` preferred for clarity, safety, and auditability |
 | **Conversation** | K13 + K8 explicitly flagged for compensating transaction / distributed system pattern in `submit()` |
 
 ---
@@ -72,8 +76,8 @@
 | **Report** | "Database resourcing" — proactively adapted when Supabase blocked, when AWS SSH lacked tools |
 | **Report** | "Testing Approach" — refactored BaseDAO to fix hanging test runner |
 | **Code** | Docstrings on every class and method; README covers environment setup, Docker, env vars |
-| **Code** | `User` and `Role` models include class-level docstrings consistent with existing model documentation pattern |
-| ⚠️ **Gap** | Explicitly mention README in report. Note documentation updated as design changed (schema changes, DAO refactor) |
+| **Code** | `User`, `Role`, `require_permission`, `require_centre_permission`, `verify_token_get_user` — all include docstrings consistent with project documentation pattern |
+| ⚠️ **Gap** | Explicitly mention README in report. Note documentation updated as design changed (schema changes, DAO refactor, auth addition) |
 
 ---
 
@@ -84,7 +88,7 @@
 | **Report** | "Testing Approach & Version Control" — TDD, Pytest, fixtures, Git, GitHub Actions CI |
 | **Report** | Concrete debugging example: BaseDAO `__enter__`/`__exit__` refactor to fix hanging test runner |
 | **Code** | `testing/endpoint_tests/test_upload.py` — parametrized tests, async client, 200/400/415/422 coverage |
-| ⚠️ **Gap** | Add cause-and-effect: what did testing *catch*? What did version control *enable*? Don't just describe — show impact |
+| ⚠️ **Gap** | Add cause-and-effect: what did testing *catch*? What did version control *enable*? Don't just describe — show impact. Auth layer still needs 401/403 test coverage |
 
 ---
 
@@ -127,7 +131,7 @@
 | --- | --- |
 | **Report** | "Extracting and Preparing Seed Data" — integrated SQL Server, Excel, Word docs, text extracts → CSV seed format |
 | **Code** | `excel_register_processing.py` — `rename_columns` → `drop_empty_rows` → `strip_prefixes` → `strip_strings` → `replace_absent_candidates` → `construct_version_ids` → `replace_nans` |
-| **Code** | `setup_db.py` — walks multiple CSV directories to seed from combined sources |
+| **Code** | `setup_db.py` — walks multiple CSV directories to seed from combined sources; `parse_pg_array()` parses PostgreSQL array strings from CSV |
 
 ---
 
@@ -148,6 +152,7 @@
 | **Report** | "Database resourcing" — Supabase → Docker lifecycle journey |
 | **Report** | "ORM and DAO" — SQL Server vs PostgreSQL; custom UIDs vs integer PKs |
 | **Scoping doc** | Full lifecycle: Planning → Design → Development → Consultation → Training → Deployment → Maintenance |
+| **Design** | Dynamic URL permission derivation evaluated and rejected — documented design decision with rationale |
 | ⚠️ **Gap** | Make lifecycle explicit in Discussion of Findings. Name strengths AND weaknesses of current prototype state |
 
 ---
@@ -168,6 +173,7 @@
 | **Report** | Scope: "ensuring Consistency, Accuracy, Completeness, Timeliness and Validity" |
 | **Code** | `excel_register_processing.py` — `validate_candidate()`, `check_for_duplicates()`, `validate_version()`, `check_lists()` |
 | **Code** | `models/__init__.py` — DB-level constraints as last-line quality enforcement |
+| **Code** | `Role.@validates('permissions')` — defensive `strip("{ }")` guards against malformed CSV input at model level |
 | ⚠️ **Gap** | Name the DAMA framework explicitly — your five dimensions match it. Shows theoretical grounding |
 
 ---
@@ -180,6 +186,7 @@
 | **Code** | `base_dao.py` — dynamic SQLAlchemy ORM queries with AND conditions |
 | **Code** | `upload_dao.py` — complex nested object creation; version_id lookups; batch-candidate assignment |
 | **Code** | `submit()` — moves data: temp filesystem → Files.com → PostgreSQL |
+| **Code** | `verify_token_get_user()` — SHA-256 hash computed at query time, compared against stored hash; no raw token ever queried |
 
 ---
 
@@ -221,8 +228,9 @@
 ### "How did you ensure the data product met user requirements and regulatory compliance?" *(AC1 — K9, S1, S3)*
 
 * Stakeholder interviews → technical specs; requirements refined via testing
+* Three roles (centre_admin, staff, master) map to real user groups — each scoped to only what they need
 * RBAC + tokenised access for GDPR and data protection
-* Three distinct roles (centre_admin, staff, master) map directly to real user groups — each scoped to only what they need
+* `get_context` endpoint locks centre_id and marking_window_id to the token — prevents data tampering
 * Pydantic validation at API boundary; FK constraints + rollbacks for integrity
 * **Distinction:** justify *why* — relational DB for referential integrity, DAO for testability
 
@@ -241,11 +249,12 @@
 
 * RBAC + magic-link tokens — least privilege, scoped per user type
 * Token security: `secrets.token_urlsafe(32)` generates unguessable token; SHA-256 hash stored in DB — raw token never persists; if DB is compromised, tokens cannot be recovered or reused
-* Distinction between bcrypt (passwords — slow, salted, brute-force resistant) and SHA-256 (random tokens — fast, sufficient because token entropy is already high)
-* Permissions stored as PostgreSQL ARRAY on Role model — `resource:action` convention, checked via FastAPI `Depends()` per route
+* Deliberate choice: bcrypt for passwords (slow, salted, brute-force resistant) vs SHA-256 for random tokens (fast, sufficient given token entropy)
+* Permissions stored as PostgreSQL ARRAY on Role — `resource:action` convention, checked via FastAPI `Depends()` per route
+* 401 vs 403 distinction: 401 = who are you? (token invalid/inactive), 403 = what are you allowed? (wrong role, wrong centre, expired window)
 * `is_active` flag allows soft-disabling users without breaking audit trail — GDPR-aligned
-* `centre_contact_id` FK scopes a centre user to a specific person, not just a centre — tighter access control
-* FK constraints and transactional rollbacks at DB level
+* `centre_contact_id` FK scopes a centre user to a specific person, not just a centre
+* Dynamic URL permission derivation considered and rejected — explicit `resource:action` preferred for clarity and auditability
 * **Compensating transaction pattern in `submit()`** — distributed system integrity; `successful_uploads` rollback on failure
 * Docker for scalable, consistent deployment
 
@@ -275,6 +284,7 @@
 * Pydantic as validation layer after Pandas transformation
 * `check_lists()` — version validation, duplicate checking, error flagging before DB commit
 * Legacy ETL: SQL + Pandas + Win32 → CSV seed data from SQL Server, Excel, Word
+* `parse_pg_array()` in seeder — handles PostgreSQL array string format from CSV with defensive spacing guards
 
 ---
 
@@ -284,6 +294,7 @@
 * **SQLAlchemy ORM** — type-safe, modular, cross-engine compatible
 * **Pydantic** — validation + clean user-facing error messages
 * **Docker** — solved infrastructure constraint, reproducible environments
+* **FastAPI Depends()** — clean dependency injection for auth without global middleware overhead
 * Compared to org's existing tools: SQL Server → PostgreSQL, Excel → structured API
 
 ---
@@ -293,6 +304,7 @@
 * Supabase → Docker: identified infrastructure constraint early, adapted
 * SQL Server vs PostgreSQL: evaluated Docker compatibility, constraint differences
 * Custom UIDs vs integer PKs: deliberate trade-off — human-readable for non-technical staff
+* Dynamic permission derivation evaluated and rejected — documented design decision
 * Test suite as formal evaluation mechanism
 * Weakness: proof-of-concept, not production-hardened; training and front-end still needed
 
@@ -304,6 +316,7 @@
 * KPIs: time per batch, turnaround, error rate, data accessibility
 * Validation flags in API response — user-correctable before commit
 * DB constraints as last-line enforcement
+* Model-level `@validates` guards malformed input before it reaches the DB
 
 ---
 
@@ -331,10 +344,10 @@
 | **Problem & Business Case** | Manual spreadsheets → integrity risks, no audit trail. KPIs quantify business case | S1, S2, K9 |
 | **Solution Architecture** | Three-tier system. ER diagram. Normalised schema, RBAC, multi-user | S3, K13, K9 |
 | **ETL Pipeline** | Excel → Pandas → Pydantic → DAO → DB. Legacy ETL. Error handling flow | K17, S6, K2, S9 |
-| **Security & Governance** | RBAC + magic-link tokens. SHA-256 hashing. Role permissions array. Compensating transaction in `submit()`. HTTP error hierarchy | K13, S4 |
+| **Security & Governance** | RBAC + magic-link tokens. SHA-256 rationale. Role permissions array. 401/403 distinction. Compensating transaction in `submit()` | K13, S4 |
 | **Deployment & Testing** | Docker Compose. GitHub Actions CI. TDD Pytest. Proactive infrastructure fix | K6, K8, B1 |
 | **Sustainability & Alignment** | Lean waste reduction. Reusable components. Org ecosystem alignment | K7, K12, S27, K26 |
-| **Evaluation & Future** | Prototype decisions. Path to production. Star schema, front-end, OCR roadmap | K24, K25, K15, S24 |
+| **Evaluation & Future** | Prototype decisions. Design alternatives considered. Path to production. Star schema, front-end, OCR roadmap | K24, K25, K15, S24 |
 
 ---
 
@@ -360,19 +373,22 @@
 
 | Item | Status |
 | --- | --- |
-| `User` model (token_hash, role_id, centre_contact_id FK, is_active, hybrid_property display_name) | ✅ Done |
-| `Role` model (role_name, permissions as ARRAY(String)) | ✅ Done |
+| `User` model (token_hash, role_id, centre_contact_id FK nullable, is_active, hybrid_property display_name) | ✅ Done |
+| `Role` model (role_name, ARRAY(String) permissions, @validates with isinstance guard + strip("{ }")) | ✅ Done |
+| `User.@validates('token_hash')` — SHA-256 hash on assignment, 64-char passthrough guard | ✅ Done |
 | `db/data/roles.csv` seed file (static) | ✅ Done |
-| `db/dummy_data/users.csv` seed file (test tokens as plaintext, hashed by seeder) | ✅ Done |
-| `parse_pg_array()` utility in seeder — `{upload:read,upload:write}` → Python list | ⏳ To do |
+| `db/dummy_data/users.csv` seed file (plaintext tokens, hashed by seeder) | ✅ Done |
+| `get_db()` generator function for FastAPI Depends() | ✅ Done |
+| `verify_token_get_user()` in `dao/auth_dao.py` — hash, query, joinedload role + centre_contact + window | ✅ Done |
+| `require_permission()` in `auth/dependencies.py` | ✅ Done |
+| `require_centre_permission()` — as above + centre_contact None guard | ✅ Done |
+| `get_context` endpoint — hydrates frontend with scoped user data | ✅ Done |
+| All upload routes wired with appropriate Depends() | ✅ Done |
+| `parse_pg_array()` utility in seeder | ⏳ To do |
 | Token generation + SHA-256 hashing in seeder (`secrets` + `hashlib`) | ⏳ To do |
-| `@validates('permissions')` on `Role` — array coercion (like existing boolean validators) | ⏳ To do |
-| `src/auth/utils.py` — `generate_token()`, `hash_token()` | ⏳ To do |
-| `src/dao/auth_dao.py` — `verify_token_and_get_user()` query | ⏳ To do |
-| `src/auth/dependencies.py` — `require_permission()` FastAPI Depends | ⏳ To do |
-| Apply `Depends(require_permission(...))` to upload routes | ⏳ To do |
-| Tests for auth flow | ⏳ To do |
+| 401/403 tests added to test suite | ⏳ To do |
+| Clean up: remove `token` from `UploadPayload`, redundant fields from `UploadFileData`, unused `validate_preview_data` | ⏳ To do |
 
 ---
 
-*Last updated: RBAC/auth design session. Topics covered: hashing concepts (bcrypt vs SHA-256), magic-link token pattern, User + Role model design, centre_contact_id as user identity anchor, permissions as PostgreSQL ARRAY, resource:action convention, FastAPI Depends() injection pattern, CSV seeding strategy for arrays and token hashes, boolean/array coercion via @validates.*
+*Last updated: RBAC full implementation session. Topics: hashing concepts (bcrypt vs SHA-256), magic-link token pattern, User + Role models, @validates for token hashing + array parsing, get_context endpoint design, require_permission + require_centre_permission dependencies, 401/403 error handling, get_db generator, verify_token_get_user DAO, dynamic permission derivation considered and rejected, controller/route signature review, Pydantic model_dump(), joinedload eager loading strategy.*

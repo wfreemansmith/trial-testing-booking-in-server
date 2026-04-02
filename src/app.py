@@ -7,9 +7,6 @@ from src.errors import http_exception_handler, server_error_handler, file_proces
 def create_app() -> FastAPI:
     app = FastAPI()
 
-    # add middleware
-    
-    # add routes
     @app.get("/")
     async def hello():
         return {"message": "hello"}

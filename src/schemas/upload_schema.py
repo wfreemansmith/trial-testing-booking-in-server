@@ -35,19 +35,7 @@ class BatchDict(BaseModel):
 def parse_batch_data(data: dict) -> BatchDict:
     return BatchDict(**data)
 
-class UploadPreviewData(BaseModel):
-    centre_id: str = Field(pattern=r'^\d{4}$')
-    marking_window_id: int
-
-def validate_preview_data(data: dict) -> dict:
-    return UploadPreviewData(**data).model_dump()
-
-def parse_preview_data(data: dict) -> UploadPreviewData:
-    return UploadPreviewData(**data)
-
 class UploadFileData(BaseModel):
-    centre_id: str = Field(pattern=r'^\d{4}$')
-    marking_window_id: int
     batch: BatchDict
     candidates: List[CandidateDict]
 
@@ -55,8 +43,6 @@ def parse_uploadfile_data(data: dict) -> UploadFileData:
     return UploadFileData(**data)
 
 class UploadData(BaseModel):
-    centre_id: str = Field(pattern=r'^\d{4}$')
-    marking_window_id: int
     epd_number: Optional[str] = None
     test_date: Optional[date] = None
     batches: List[BatchDict]
@@ -66,5 +52,4 @@ def parse_upload_data(data: dict) -> UploadData:
     return UploadData(**data)
 
 class UploadPayload(BaseModel):
-    token: str
     data: dict

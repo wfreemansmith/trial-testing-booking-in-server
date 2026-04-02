@@ -3,6 +3,8 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, validates, declarative_base, reconstructor
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import ARRAY
+import hashlib
+
 
 Base = declarative_base()
 
@@ -31,6 +33,12 @@ class User(Base):
         if self.centre_contact:
             return self.centre_contact.contact_name
         return "Admin"
+    
+    @validates
+    def hash_token(self, key, value):
+        if len(value) == 64:
+            return value
+        return hashlib.sha256(value.encode()).hexdigest()
 
 
 class Role(Base):
@@ -46,6 +54,16 @@ class Role(Base):
 
     # relationships
     users = relationship("User", back_populates="role")
+
+    @validates('permissions')
+    def parse_array(self, key, value):
+        """
+        Parses array strings e.g.
+        '{upload:read},{upload:write}' -> ['upload:read', 'upload:write']
+        """
+        if isinstance(value, list):
+            return value
+        return [p.strip("{ }").lower() for p in value.split(",")]
     
 
 class CandidateFeedback(Base):

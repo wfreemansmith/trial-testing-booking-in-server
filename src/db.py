@@ -12,6 +12,20 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def get_database():
     """Returns an SQL alchemy database engine and session"""
     return SessionLocal()
+    
+
+def get_db():
+    """Yields an SQL alchemy database engine and session, close and rollback"""
+    session = SessionLocal()
+    try:
+        yield session
+        session.commit()
+    except Exception as e:
+        logger.error(f"{e}")
+        logger.info("Rolling back current session...")
+        session.rollback()
+    finally:
+        session.close()
 
 
 @contextmanager

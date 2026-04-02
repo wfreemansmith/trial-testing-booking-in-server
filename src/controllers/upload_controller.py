@@ -44,11 +44,11 @@ def stage_file(centre_id: str, marking_window_id: int, batch: BatchDict, candida
         "filename": destination_filename
     }
 
-def check(data: UploadData, check_file_upload: bool = False) -> Dict[str, List[dict]]:
+def check(centre_id: str, marking_window_id: int, data: UploadData, check_file_upload: bool = False) -> Dict[str, List[dict]]:
     """Checks user inputted data and returns updated data and list of errors"""
     checked_candidates_list, checked_batches_list, error_list = check_lists(
-        centre_id=data.centre_id,
-        marking_window_id=data.marking_window_id,
+        centre_id=centre_id,
+        marking_window_id=marking_window_id,
         candidates_list=data.candidates,
         batches_list=data.batches,
         test_date=data.test_date,
@@ -61,10 +61,8 @@ def check(data: UploadData, check_file_upload: bool = False) -> Dict[str, List[d
         "errors": error_list
         }
 
-def submit(data: dict):
+def submit(centre_id: str, marking_window_id: int, data: UploadData):
     """Submits data to database and uploads file"""
-    # additional step of checking that files have been uploaded - add to errors if not
-    # asyncronous operation - get the file from the server and upload, then delete the file
     from src.services.file_handling import FileHandler
     from logger import logger
     import os
@@ -76,12 +74,12 @@ def submit(data: dict):
         # retrieves stored files from server, uploads, rollback if not achieved atomically 
         successful_uploads = []
 
-        for batch in data['batches']:
+        for batch in data.batches:
             try:
                 staged = staged_dao.retrieve_file(
-                    centre_id=data['centre_id'],
-                    marking_window_id=data['marking_window_id'],
-                    version_id=batch['version_id']
+                    centre_id=centre_id,
+                    marking_window_id=marking_window_id,
+                    version_id=batch.version_id
                     )
                 
                 if not staged:
@@ -111,4 +109,4 @@ def submit(data: dict):
 
         # finally enters record on db
         upload_dao = UploadDAO(session)
-        upload_dao.insert_upload(data)
+        upload_dao.insert_upload(data.model_dump())
