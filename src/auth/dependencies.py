@@ -17,7 +17,7 @@ def verify_token_get_user(raw_token: str, db: Session) -> User:
         .first()
     )
 
-async def require_permission(permission: str) -> User:
+def require_permission(permission: str) -> User:
     """
     Wrapper for retrieving user & checking their role has permission for the given action.
     
@@ -37,7 +37,7 @@ async def require_permission(permission: str) -> User:
     return dependency
 
 
-async def require_centre_permission(action: str) -> User:
+def require_centre_permission(action: str) -> User:
     """
     Centre-specific wrapper for retrieving user & checking their role has permission for the given action.
     Checks that User has required fields 'centre_id' and 'marking_window_id'.

@@ -52,4 +52,4 @@ def parse_upload_data(data: dict) -> UploadData:
     return UploadData(**data)
 
 class UploadPayload(BaseModel):
-    data: dict
+    data: dict 

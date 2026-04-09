@@ -1,4 +1,4 @@
 role_name,permissions
-centre_admin,{upload:read,upload:write}
-staff,{upload:read,admin:read}
-master,{upload:read,upload:write,admin:read,admin:write}
+centre_admin,"{upload:read,upload:write}"
+staff,"{upload:read,admin:read}"
+master,"{upload:read,upload:write,admin:read,admin:write}"

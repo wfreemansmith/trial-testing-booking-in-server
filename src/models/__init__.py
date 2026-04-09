@@ -34,11 +34,18 @@ class User(Base):
             return self.centre_contact.contact_name
         return "Admin"
     
+    # validation
     @validates('token_hash')
     def hash_token(self, key, value):
         if len(value) == 64:
             return value
         return hashlib.sha256(value.encode()).hexdigest()
+    
+    @validates('is_active')
+    def convert_to_boolean(self, key, value):
+        if isinstance(value, str):
+            return value.strip().lower() in ('true', '1', 'yes', 'y')
+        return bool(value)
 
 
 class Role(Base):
@@ -109,7 +116,7 @@ class MarkingWindow(Base):
     # relationships
     uploads = relationship("Upload", back_populates="marking_window")
     requests = relationship("CentreRequests", back_populates="marking_window", cascade="all, delete-orphan")
-    user = relationship("User", back_populates="marking_window")
+    users = relationship("User", back_populates="marking_window")
 
 
 class LanguageFamily(Base):
@@ -434,6 +441,7 @@ class Upload(Base):
     #     if marking_window_id and centre_id and part_delivery:
     #         self.upload_id = f"{marking_window_id}_{centre_id}_{part_delivery}"
     #     return value
+    
     def __init__(self, marking_window_id=None, centre_id=None, part_delivery=None, 
                  epd_number=None, test_date=None, upload_date=None, 
                  rescan_needed=False, sent_date=None, **kwargs):

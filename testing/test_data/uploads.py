@@ -6,6 +6,7 @@ upload_preview_expected_res = [
         "filename": "test_register_1",
         "centre_id": "3243",
         "marking_window_id": 1,
+        "token": "hannah-centre",
         "batches": [
             {
                 "version_id": "ACRAP123",
@@ -66,6 +67,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_2",
         "centre_id": "3243",
+        "token": "hannah-centre",
         "marking_window_id": 1,
         "expected_filenames": {
             "ACRAP123": "3243_ACRAP123_0001-0008_4 candidates",
@@ -190,6 +192,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_3",
         "centre_id": "3243",
+        "token": "hannah-centre",
         "marking_window_id": 1,
         "batches": [
             {
@@ -275,6 +278,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_4",
         "centre_id": "3243",
+        "token": "hannah-centre",
         "marking_window_id": 1,
         "batches": [
             {
@@ -400,6 +404,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_5",
         "centre_id": "3243",
+        "token": "hannah-centre",
         "marking_window_id": 1,
         "batches": [
             {
@@ -480,6 +485,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_6",
         "centre_id": "3243",
+        "token": "hannah-centre",
         "marking_window_id": 1,
         "batches": [
             {
@@ -570,6 +576,7 @@ upload_preview_expected_res = [
     {
         "filename": "test_register_7",
         "centre_id": "3243",
+        "token": "hannah-centre",
         "marking_window_id": 1,
         "batches": [
             {
@@ -644,6 +651,7 @@ upload_refresh_inputs = [
         "TEST_ID": "input_1 - no issues",
         "marking_window_id": 1,
         "centre_id": "3243",
+        "token": "hannah-centre",
         "epd_number": None,
         "test_date": "2025-04-10",
         "batches": [
@@ -703,6 +711,7 @@ upload_refresh_inputs = [
         "TEST_ID": "input_2 - missing cand data",
         "marking_window_id": 1,
         "centre_id": "3243",
+        "token": "hannah-centre",
         "epd_number": None,
         "test_date": None,
         "batches": [
@@ -774,6 +783,7 @@ upload_refresh_inputs = [
         "TEST_ID": "input_3 - date in future",
         "marking_window_id": 1,
         "centre_id": "3243",
+        "token": "hannah-centre",
         "epd_number": None,
         "test_date": (date.today() + timedelta(days=5)).strftime("%Y-%m-%d"),
         "batches": [
@@ -1228,6 +1238,7 @@ complete_upload_json = [
     {
         "marking_window_id": 1,
         "centre_id": "3243",
+        "token": "hannah-centre",
         "epd_number": None,
         "test_date": "2025-04-10",
         "batches": [
@@ -1298,6 +1309,7 @@ complete_upload_json = [
         {
         "marking_window_id": 1,
         "centre_id": "3243",
+        "token": "hannah-centre",
         "epd_number": None,
         "test_date": "2025-04-10",
         "batches": [
@@ -1381,6 +1393,7 @@ duplicate_response = [
         "TEST_ID": "All candidates duplicates",
         "filename": "test_register_1",
         "centre_id": "3243",
+        "token": "hannah-centre",
         "marking_window_id": 1,
         "batches": [],
         "candidates": [],
@@ -1395,6 +1408,7 @@ duplicate_response = [
         "TEST_ID": "All candidate numbers duplicates",
         "filename": "test_register_1",
         "centre_id": "3243",
+        "token": "hannah-centre",
         "marking_window_id": 1,
         "batches": [
             {
@@ -1480,6 +1494,7 @@ upload_fileupload_data = [
         "filename": "test_file_upload_small_pdf",
         "centre_id": "3243",
         "marking_window_id": 1,
+        "token": "hannah-centre",
         "batch": {
             "version_id": "ACRAP123",
             "component_id": "R"
@@ -1518,6 +1533,7 @@ upload_fileupload_data = [
         "filename": "test_file_upload_medium_pdf",
         "centre_id": "3243",
         "marking_window_id": 1,
+        "token": "hannah-centre",
         "batch": {
             "version_id": "LBP59",
             "component_id": "L"
@@ -1555,6 +1571,7 @@ upload_fileupload_data = [
         "filename": "test_file_upload_large_pdf",
         "centre_id": "3243",
         "marking_window_id": 1,
+        "token": "hannah-centre",
         "batch": {
             "version_id": "ACWIP1157",
             "component_id": "W"
@@ -1592,6 +1609,7 @@ upload_fileupload_data = [
         "filename": "test_file_upload_very_large_pdf",
         "centre_id": "3243",
         "marking_window_id": 1,
+        "token": "hannah-centre",
         "batch": {
             "version_id": "ACWIP1158",
             "component_id": "W"

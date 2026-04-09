@@ -260,10 +260,10 @@ def check_lists(centre_id: str, marking_window_id: int, candidates_list: List[Ca
             staged_file = dao.retrieve_file(centre_id=centre_id, marking_window_id=marking_window_id, version_id=batch.version_id)
             if staged_file:
                 batch.file_uploads.clear()
-                batch.file_uploads.append({"filename": staged_file.destination_filename})
+                batch.file_uploads.append({"file_name": staged_file.destination_filename})
             elif check_file_upload:
                 batch.errors.append(
-                    ErrorMessage(field="filename", message="Please upload a PDF for this version")
+                    ErrorMessage(field="file_name", message="Please upload a PDF for this version")
                 )
 
     # clean batches list

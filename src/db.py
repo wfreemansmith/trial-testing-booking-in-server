@@ -24,6 +24,7 @@ def get_db():
         logger.error(f"{e}")
         logger.info("Rolling back current session...")
         session.rollback()
+        raise
     finally:
         session.close()
 
@@ -39,6 +40,7 @@ def get_db_session():
         logger.error(f"{e}")
         logger.info("Rolling back current session...")
         session.rollback()
+        raise
     finally:
         session.close()
 

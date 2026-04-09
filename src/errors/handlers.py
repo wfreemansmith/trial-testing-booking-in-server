@@ -36,12 +36,12 @@ async def validation_error_handler(request: Request, e: ValidationError):
 
 async def unprocessable_error_handler(request: Request, e: UnprocessableEntity):
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={
             "status": "error",
             "data": e.data,
             "message": e.message,
-            "code": status.HTTP_422_UNPROCESSABLE_ENTITY
+            "code": status.HTTP_422_UNPROCESSABLE_CONTENT
             }
         )
 

@@ -64,7 +64,7 @@ def check(centre_id: str, marking_window_id: int, data: UploadData, check_file_u
 def submit(centre_id: str, marking_window_id: int, data: UploadData):
     """Submits data to database and uploads file"""
     from src.services.file_handling import FileHandler
-    from logger import logger
+    from src.logger import logger
     import os
 
     with get_db_session() as session:
@@ -95,7 +95,7 @@ def submit(centre_id: str, marking_window_id: int, data: UploadData):
                     destination_folder=staged.destination_folder)
                 
                 successful_uploads.append(staged)
-                batch.setdefault('file_uploads', []).append({'file_name': staged.destination_filename})
+                batch.file_uploads.append({'file_name': staged.destination_filename})
             except Exception as e:
                 logger.error(f"Upload failed, attempt rollback of {len(successful_uploads)} files")
                 for staged in successful_uploads:
@@ -109,4 +109,4 @@ def submit(centre_id: str, marking_window_id: int, data: UploadData):
 
         # finally enters record on db
         upload_dao = UploadDAO(session)
-        upload_dao.insert_upload(data.model_dump())
+        upload_dao.insert_upload(data.model_dump(), marking_window_id, centre_id)
