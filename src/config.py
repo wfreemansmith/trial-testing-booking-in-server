@@ -30,6 +30,7 @@ USERNAME = os.getenv("USERNAME")
 FILE_UPLOAD_API_KEY = os.getenv("FILE_UPLOAD_API_KEY")
 FILE_UPLOAD_BASE_URL = os.getenv("FILE_UPLOAD_BASE_URL")
 STAGING_DIR = os.path.join(os.getcwd(), "tmp_uploads")
+os.makedirs(STAGING_DIR, exist_ok=True)
 
 # debug mode
 parser = argparse.ArgumentParser()

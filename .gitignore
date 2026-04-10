@@ -7,6 +7,4 @@ db/private_data/*
 __pycache__/
 *.pyc
 *.pyo
-tmp_uploads/*
-testing/test_documents/*.pdf
 .venv
