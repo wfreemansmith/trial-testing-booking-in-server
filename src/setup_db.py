@@ -50,7 +50,7 @@ def setup_database(session: Session):
     # iterates through all data and inputs
     for data_set in ["data", f"{data_mode}_data"]:
         for root, _, files in os.walk(os.path.join("db", data_set)):
-            for file in files:
+            for file in sorted(files):
                 tablename = os.path.splitext(file)[0].split('.')[1]
                 csv_filepath = os.path.join(root, file)
                 seed_data_from_csv(
