@@ -532,7 +532,7 @@ I adapted communication style for each group — technical documentation for IT,
 | Compensating transaction | When two systems can't share a transaction, undo completed steps if any step fails |
 | SHA-256 | Fast one-way hash — good for tokens; use bcrypt for passwords (slower, salted) |
 | Magic link | Auth via a link with a token in the URL — no password needed |
-| DAMA framework | Five data quality dimensions: Accuracy, Completeness, Consistency, Timeliness, Validity |
+| DAMA framework | Six data quality dimensions: Accuracy, Completeness, Consistency, Timeliness, Validity, Uniqueness |
 | OLTP vs OLAP | OLTP = transactional (writes, operational); OLAP = analytical (reads, aggregations) |
 | Star schema | Fact table surrounded by dimension tables — optimised for analytical queries |
 | ETL | Extract, Transform, Load — the process of moving data between systems |

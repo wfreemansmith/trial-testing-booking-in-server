@@ -284,7 +284,7 @@
 ---
 
 ### "What data quality metrics do you track?" *(AC14 — K4, S26)*
-- Five dimensions: Consistency, Accuracy, Completeness, Timeliness, Validity (DAMA framework)
+- Six dimensions: Consistency, Accuracy, Completeness, Timeliness, Validity, Uniqueness (DAMA framework)
 - KPIs: time per batch, turnaround, error rate, data accessibility
 - Validation flags in API response — user-correctable before commit
 - DB constraints as last-line enforcement
