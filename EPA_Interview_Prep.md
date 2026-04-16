@@ -34,7 +34,7 @@ I translated requirements into technical specs iteratively — the schema, API e
 
 On the compliance side, I implemented RBAC with three roles (centre_admin, staff, master) so each user accesses only what they need — the principle of least privilege. Token hashing means credentials are never stored in plaintext. The `is_active` flag allows soft-disabling users without deleting records, preserving the audit trail GDPR requires.
 
-**Distinction angle:** Don't just say you met requirements — justify *why* specific choices met them. I chose a relational database because the data has strong referential integrity requirements — candidates belong to uploads, uploads belong to centres and windows, and FK constraints enforce this at DB level. I chose the DAO pattern because it makes the data layer independently testable. The `get_context` endpoint locks `centre_id` and `marking_window_id` to the token rather than accepting them as form data — this prevents a centre user from submitting on behalf of another centre.
+**Distinction angle:** Don't just say you met requirements — justify *why* specific choices met them. I chose a relational database because the data has strong referential integrity requirements — candidates belong to uploads, uploads belong to centres and windows, and FK constraints enforce this at DB level. I chose the DAO pattern because it makes the data layer independently testable. The `get_context` endpoint derives `centre_id` and `marking_window_id` from the token rather than accepting them as form data — this prevents a centre user from submitting on behalf of another centre.
 
 **Follow-up questions to expect:**
 - How did you refine requirements over time?
@@ -97,15 +97,17 @@ End of life: Soft-delete (`is_active` flag) rather than hard delete means data i
 **Your answer:**
 Security is implemented at multiple layers.
 
-**Authentication:** Magic-link tokens — a random string generated with `secrets.token_urlsafe(32)`, SHA-256 hashed before storage. The raw token is never stored; even if the database were compromised, the attacker couldn't use the hashes directly.
+**Authentication:** Magic-link tokens — a random string passed as a `?q=` query parameter, SHA-256 hashed before storage in the database. The raw token is never stored; even if the database were compromised, the hashes couldn't be used directly. The `@validates('token_hash')` guard on the model prevents double-hashing if the value is loaded back from the database.
 
-**Authorisation:** RBAC with three roles: centre_admin, staff, and master. Permissions stored as a PostgreSQL ARRAY on the Role model using `resource:action` convention (e.g. `upload:write`). Every route has a FastAPI dependency (`Depends(require_permission(...))`) that verifies the token, checks the role's permissions, and raises a 401 or 403 before the handler runs. The report describes this: "RBAC designed to limit access to specific resources and actions — supporting the principle of least privilege... these approaches ensure best security practices are upheld and candidate information is protected."
+**Authorisation:** RBAC with three roles: centre_admin, staff, and master. Permissions are stored as a PostgreSQL array on the Role model using a `resource:action` convention (e.g. `upload:write`). Every route has a FastAPI dependency (`Depends(require_permission(...))`) that verifies the token, checks the role's permissions, and raises a 401 or 403 before the handler runs.
+
+Two dependency factories serve different use cases: `require_permission()` for general access control, and `require_centre_permission()` which additionally verifies the user has a linked centre contact — ensuring centre-specific routes can only be accessed by centre users. The report describes this: "RBAC designed to limit access to specific resources and actions — supporting the principle of least privilege."
 
 **Data integrity:** For cross-system operations, I implemented a compensating transaction pattern in `submit()` — because Files.com and PostgreSQL can't share a transaction boundary, I upload to Files.com first, track successes in `successful_uploads`, and roll back all external uploads if any step fails before committing to the database.
 
 **Scalability:** Docker Compose with environment-specific volumes means scaling from development to production is a config change, not a rearchitect. The DAO pattern means the database layer is independently swappable.
 
-**Distinction angle:** Explain *why* SHA-256 rather than bcrypt. bcrypt is correct for passwords (slow, salted, brute-force resistant) but unnecessary for random tokens where entropy is already high — `secrets.token_urlsafe(32)` produces 256 bits of entropy. SHA-256 is sufficient and faster. This shows you understand the underlying security principles, not just copied implementation. Also worth mentioning: 401 = authentication failure (who are you?), 403 = authorisation failure (what are you allowed to do?) — these are distinct and handled by the same generic HTTP exception handler using `e.status_code`.
+**Distinction angle:** Explain *why* SHA-256 rather than bcrypt. bcrypt is correct for passwords (slow, salted, brute-force resistant) but unnecessary for random tokens where entropy is already high — `secrets.token_urlsafe(32)` produces 256 bits of entropy. SHA-256 is sufficient and faster. This shows you understand the underlying security principles, not just the implementation. Also worth mentioning: I explicitly considered deriving permissions dynamically from URL patterns but rejected it — explicit `resource:action` strings are more maintainable, auditable, and independently testable. 401 = authentication failure (who are you?), 403 = authorisation failure (what are you allowed to do?).
 
 **Follow-up questions to expect:**
 - What is the difference between authentication and authorisation?
@@ -146,17 +148,17 @@ The KSB Master List is itself a form of living documentation — mapping every t
 **Your answer:**
 I used a test-driven approach throughout. The report states: "Testing was integrated from the beginning, using a Test-Driven Development approach. I used Pytest with fixtures to manage setup and teardown of environments, starting from a clean database for each test."
 
-The test suite has six unit test files covering DAOs, utils, file handling, and the controller, plus endpoint tests covering the full upload journey from preview through to submit. Tests are parametrized against 13 different test Excel registers — covering happy paths, malformed columns, wrong formats, and duplicate candidates.
+The test suite covers DAOs, utils, file handling, and the full upload journey from preview through to submit. Tests are parametrized against multiple test Excel registers — covering happy paths, malformed columns, wrong formats, and duplicate candidates.
 
 The `conftest.py` fixtures reset and reseed the database between tests, ensuring full isolation. This was critical — without it, test order would affect results.
 
 The BaseDAO debugging is a concrete example in the report: "SQLalchemy sessions across tests caused the test runner to hang. To resolve this, I refactored my Base DAO into a context manager using Python's `__enter__` and `__exit__` methods to ensure each session was properly managed, closed and rolled back when exiting the context."
 
-GitHub Actions runs the full test suite on every push — the report calls this "a more production-ready architecture" that it "reduced environment-specific issues." This caught environment differences between local and CI early.
+GitHub Actions runs the full test suite on every push. It caught a bug that was invisible locally — `os.walk` returns files in non-deterministic order in different environments, causing a foreign key violation when `languages` was seeded before `language_families` in CI. Fixing it with `sorted()` resolved the issue. This is a concrete example of CI catching an environment-specific bug that local testing couldn't reveal.
 
-For runtime debugging, `logger.py` uses Rich formatting with INFO/DEBUG level switching via a `--verbose` CLI flag — so detailed output is available when needed without polluting normal logs.
+For runtime debugging, `logger.py` uses Rich formatting with INFO/DEBUG level switching — detailed output available when needed without polluting normal logs.
 
-**Distinction angle:** Show cause and effect. The BaseDAO story is the strongest: the problem (sessions hanging), the debugging process (identifying session lifecycle issues), the fix (`__enter__`/`__exit__`), and what it enabled (reliable test isolation). Version control enabled the Supabase → Docker pivot without losing prior work. The commented-out `@validates` approaches in the models are evidence of iteration tracked in version history.
+**Distinction angle:** Show cause and effect. The BaseDAO story is the strongest: the problem (sessions hanging), the debugging process (identifying session lifecycle issues), the fix (`__enter__`/`__exit__`), and what it enabled (reliable test isolation). The CI bug story demonstrates why consistent environments matter — the same code produced different results depending on filesystem ordering. Version control enabled the Supabase → Docker pivot without losing prior work.
 
 **Follow-up questions to expect:**
 - What is a fixture and why did you use them?
@@ -208,6 +210,8 @@ The project uses Docker Compose for deployment across three environments: develo
 For CI/CD, GitHub Actions runs on every push. The workflow: checks out code, injects test env vars from GitHub Secrets (credentials never in the repo), builds Docker containers, runs pytest inside the container, tears everything down. CI environment is identical to local — same OS, Python version, dependencies.
 
 For the runtime pipeline in `submit()`, the deployment approach is compensating transactions — because Files.com and PostgreSQL can't share a transaction boundary, failure at any point triggers rollback of all completed steps.
+
+It's worth noting that in a different context, pipeline orchestration tools like Apache Airflow, Prefect, or Azure Data Factory could handle deployment and scheduling of equivalent pipelines with less custom infrastructure. These tools provide built-in retry logic, monitoring, and visual pipeline management. The custom approach here was chosen because the pipeline is tightly coupled to the data model and the bespoke validation logic, and because building it from scratch evidences the depth of data engineering skill this apprenticeship requires.
 
 **Distinction angle (S16 — evaluate the algorithm):** For `ingest_excel_file()`:
 
@@ -319,11 +323,15 @@ Key prototype decisions and how they were evaluated:
 
 **Primary key strategy:** Evaluated auto-increment integers vs composite string UIDs. Chose composite UIDs (`{window_id}_{centre_id}_{part_delivery}`) because they're human-readable for non-technical staff who might query the database directly. The commented-out `@validates`-based generation approach in the models shows iteration — it was found to be unreliable and replaced with `__init__`-based generation.
 
+**RBAC permission model:** Evaluated deriving permissions dynamically from URL patterns vs explicit `resource:action` strings. Rejected URL-based derivation because it's harder to audit, harder to test in isolation, and more fragile when routes change. This is documented as a deliberate design decision.
+
 **ORM approach:** SQL Server vs PostgreSQL (chose PostgreSQL for Docker compatibility and constraint support). Raw SQL vs ORM (chose ORM for testability).
 
-**RBAC design:** Dynamic URL-based permission derivation was evaluated and rejected — explicit `resource:action` strings are more maintainable and auditable.
+Current prototype's known weaknesses: no frontend (proof-of-concept only), not production-hardened (no rate limiting, no audit logging, no monitoring).
 
-Current prototype's known weaknesses: no frontend (proof-of-concept only), auth seeder not yet implemented, not production-hardened (no rate limiting, no audit logging, no monitoring).
+**Retrospective — RBAC timing:** One lesson from this project is that I retrofitted RBAC after the core pipeline was built. This required cascading changes — new models, updated seed infrastructure, revised route signatures, reworked test fixtures and test data. Had I elicited access control requirements more thoroughly in the initial stakeholder analysis phase, RBAC could have been designed into the architecture from the start, avoiding that rework. It's a concrete example of why security design belongs in the scoping phase, not as a later addition.
+
+**Retrospective — build vs configure:** Reflecting on the project as a whole, building from scratch with FastAPI, SQLAlchemy, Docker and a full test suite was ambitious. In a different organisational context — one without the same data sensitivity requirements, or without the goal of demonstrating breadth of engineering skill — a low-code orchestration tool could deliver equivalent pipeline outcomes with significantly less infrastructure overhead. Tools like n8n, Apache Airflow, Prefect, or Azure Data Factory would allow more focus on business logic and pipeline construction rather than framework decisions. Azure Data Factory is particularly relevant given CUP's existing Microsoft ecosystem. The choice to build from scratch here was deliberate and appropriate: it evidences the full range of data engineering skills, and the sensitivity of candidate data required tight, bespoke control over every layer.
 
 **Distinction angle (S24):** Evaluate integration with the *organisation's* data architecture specifically. The system feeds into Power BI (via normalised schema → future star schema), integrates with legacy SQL Server (pyodbc for seed data), and aligns with Files.com infrastructure already in use. It doesn't replace existing systems — it orchestrates them.
 
@@ -360,20 +368,22 @@ I followed Python coding standards (PEP 8) throughout and used a layered MVC-adj
 
 **Example question:** *What process do you follow to identify and track data quality metrics for ensuring accuracy and reliability?*
 
-**Concept:** The DAMA framework defines five data quality dimensions: Accuracy, Completeness, Consistency, Timeliness, and Validity.
+**Concept:** The DAMA framework defines six data quality dimensions: Accuracy, Completeness, Consistency, Uniqueness, Timeliness, and Validity.
 
 **Your answer:**
-My five quality dimensions map directly to the DAMA framework:
+My six quality dimensions map directly to the DAMA framework, enforced across multiple layers of the pipeline:
 
-**Accuracy** — `validate_candidate()` checks required fields are present and correctly formatted. Database FK constraints ensure candidates belong to valid uploads, uploads to valid centres. `CheckConstraint` on `centre_id` enforces the four-digit numeric format.
+**Accuracy** — `validate_candidate()` checks that required fields are present and correctly formatted. Database FK constraints ensure candidates belong to valid uploads, uploads to valid centres. `CheckConstraint` on `centre_id` enforces the four-digit numeric format.
 
-**Completeness** — `check_lists()` flags missing candidate names, numbers, and paper type. Empty rows are dropped in the Pandas pipeline before any validation occurs.
+**Completeness** — `validate_candidate()` explicitly checks that `candidate_name` is not blank, flagging field-level error messages before any data is committed. Empty rows are additionally dropped during the Pandas ingestion pipeline via `drop_empty_rows`, preventing incomplete records from propagating downstream.
 
-**Consistency** — `is_duplicate_candidate()` checks incoming candidates against the database to prevent the same candidate appearing twice across uploads. In-list duplicates are also detected. It uses a three-case logic: full duplicate (True), number-only duplicate (returns next available number), new candidate (False) — using `itertools.chain` to find the max number across both the incoming list and existing database records.
+**Consistency** — enforced at two levels. `construct_upload_filename()` and `construct_upload_path()` in `helpful_funcs.py` enforce an agreed naming convention for files transferred to Files.com (`{centre_id}_{version_id}_{candidate_range}_{num_of_cands} candidates`), ensuring files are predictably structured on the receiving side. Where consistency cannot be guaranteed by a shared transaction — because Files.com and PostgreSQL operate across separate system boundaries — a compensating transaction pattern is implemented in `submit()`: completed Files.com uploads are tracked in `successful_uploads` and rolled back if any step fails before the database commit. This ensures the two systems never fall into a partially consistent state.
 
-**Timeliness** — `check_lists()` validates that `test_date` is not in the future. The marking window expiry check in the auth dependency ensures submissions only occur within the valid window (plus 7-day grace period).
+**Uniqueness** — `check_for_duplicates()` produces a boolean mask across the incoming candidates list using a three-case logic: full duplicate (True), number-only conflict (returns next available number), new candidate (False). This filters duplicates before any records reach the DAO layer, and composite primary keys (e.g. `{window_id}_{centre_id}_{part_delivery}`) structurally prevent duplicate uploads at the database level.
 
-**Validity** — version IDs are validated against the database via `validate_version()`. File uploads are checked for correct MIME type and extension at the route level.
+**Timeliness** — `upload_date` is set via `server_default=func.now()` on the `Upload` model, automatically recording when data entered the system without relying on user input. The auth dependency enforces marking window expiry (plus a 7-day grace period), ensuring submissions only occur within the valid operational window.
+
+**Validity** — version IDs are validated against the database via `validate_version()`. File uploads are checked for correct MIME type and extension at the route level. Pydantic schemas enforce type coercion and format constraints at the API boundary before any data reaches the DAO layer.
 
 Errors are returned to the user with field-level messages — quality issues are surfaced for correction rather than silently dropped. The report states: "The system differentiates between expected user errors (such as missing fields, duplicate candidates, incorrect formats) and system errors."
 
@@ -383,6 +393,8 @@ Errors are returned to the user with field-level messages — quality issues are
 - What is the DAMA framework?
 - How would you track data quality over time, not just at ingestion?
 - What is referential integrity?
+- What is a boolean mask?
+- What is a compensating transaction?
 
 ---
 
@@ -532,8 +544,8 @@ I adapted communication style for each group — technical documentation for IT,
 | Pipe chain | Chaining pandas transformations: `df.pipe(f1).pipe(f2).pipe(f3)` |
 | Least privilege | Users/processes have only the permissions they need — no more |
 | 401 vs 403 | 401 = not authenticated (who are you?); 403 = not authorised (what are you allowed to do?) |
-| Compensating transaction | When two systems can't share a transaction, track successes and roll back if any step fails |
+| resource:action | Permission convention (e.g. `upload:write`) — explicit, auditable, independently testable |
 
 ---
 
-*Last updated: essay content reviewed and incorporated into project answers. Report status confirmed — four sections (Data Product Outcomes, Project Outcomes, Discussion, Recommendations) still to be written. All answers updated to reference specific report sections where written.*
+*Last updated: RBAC auth system completed — full detail added to AC4 answer (magic-link tokens, `require_permission`/`require_centre_permission` factories, `resource:action` convention, SHA-256 rationale, URL-based permission derivation rejected). AC6 updated with CI bug story (`os.walk` + `sorted()`) as concrete cause-and-effect testing example. AC8 updated with note on alternative orchestration tools. AC12 updated with two retrospective reflections: RBAC timing lesson (design security in from the start) and build vs configure trade-off (Airflow/ADF/n8n in a different context). All tests passing in Docker and GitHub Actions.*
